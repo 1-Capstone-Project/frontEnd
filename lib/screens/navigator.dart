@@ -38,7 +38,7 @@ class _MainNavigatorState extends State<MainNavigator> {
       bottomNavigationBar: MotionTabBar(
         labels: const ["홈", "커뮤니티", "취업", "일정", "프로필"],
         initialSelectedTab: "홈",
-        tabSize: 40,
+        tabSize: 50,
         tabIconColor: Colors.grey,
         tabSelectedColor: PRIMARY_COLOR,
         onTabItemSelected: (int index) {
