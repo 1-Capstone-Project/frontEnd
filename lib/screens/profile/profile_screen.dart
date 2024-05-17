@@ -11,6 +11,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  // ignore: unused_field
   final GlobalKey<ScaffoldState> _key = GlobalKey();
   final backgroundImage = 'assets/example/image1.jpeg';
   final profileImage = 'assets/example/image2.jpeg';
