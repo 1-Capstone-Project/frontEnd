@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gitmate/screens/navigator.dart';
 import 'package:gitmate/screens/sign/sigin_screen.dart';
-import 'package:gitmate/utils/colors.dart';
 import 'package:gitmate/widget/logo_and_text.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -35,16 +33,14 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-        child: Container(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              LogoAndText(),
-            ],
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            LogoAndText(),
+          ],
         ),
       ),
     );
