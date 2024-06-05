@@ -15,8 +15,8 @@ class HomeScreen extends StatelessWidget {
                 decoration: const BoxDecoration(
                   color: Colors.blue,
                   borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.elliptical(200, 60),
-                    bottomRight: Radius.elliptical(200, 60),
+                    bottomLeft: Radius.elliptical(200, 70),
+                    bottomRight: Radius.elliptical(200, 70),
                   ),
                 ),
               ),
