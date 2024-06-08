@@ -21,7 +21,7 @@ class CustomTextFormField extends StatelessWidget {
     final baseBorder = OutlineInputBorder(
       borderSide: BorderSide(
         color: INPUT_BORDER_COLOR,
-        width: 1.0,
+        width: 2.0,
       ),
     );
 
