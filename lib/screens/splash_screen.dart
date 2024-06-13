@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gitmate/const/colors.dart';
+import 'package:gitmate/screens/navigator.dart';
 import 'package:gitmate/screens/sign/sigin_screen.dart';
-import 'package:gitmate/widget/logo_and_text.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,9 +18,9 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
 
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 2), () {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const SignScreen()),
+        MaterialPageRoute(builder: (_) => const SiginScreen()),
       );
     });
   }
@@ -33,13 +34,24 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.white,
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            LogoAndText(),
+            Image.asset(
+              'assets/images/logo.png',
+              color: AppColors.primaryColor,
+              width: 100,
+            ),
+            const Text(
+              "GitMate",
+              style: TextStyle(
+                color: AppColors.primaryColor,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),

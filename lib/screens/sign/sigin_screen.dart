@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:gitmate/component/custom_text_form_field.dart';
+import 'package:gitmate/component/custom_text_form_filed.dart';
+import 'package:gitmate/const/colors.dart';
 import 'package:gitmate/screens/navigator.dart';
-import 'package:gitmate/utils/colors.dart';
-import 'package:gitmate/widget/logo_and_text.dart';
 
-class SignScreen extends StatefulWidget {
-  const SignScreen({super.key});
+class SiginScreen extends StatefulWidget {
+  const SiginScreen({super.key});
 
   @override
-  State<SignScreen> createState() => _SignScreenState();
+  State<SiginScreen> createState() => _SiginScreenState();
 }
 
-class _SignScreenState extends State<SignScreen> {
+class _SiginScreenState extends State<SiginScreen> {
   String username = '';
   String password = '';
 
@@ -24,7 +23,6 @@ class _SignScreenState extends State<SignScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const LogoAndText(),
               const SizedBox(height: 20.0),
               CustomTextFormField(
                 hintText: '이메일을 입력해주세요.',
@@ -51,21 +49,10 @@ class _SignScreenState extends State<SignScreen> {
                             builder: (_) => const MainNavigator()));
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PRIMARY_COLOR,
+                    backgroundColor: AppColors.primaryColor,
                     foregroundColor: Colors.white,
                   ),
                   child: const Text('로그인'),
-                ),
-              ),
-              const SizedBox(height: 15.0),
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Center(
-                  child: Image.asset('assets/images/github_logo.png'),
                 ),
               ),
             ],

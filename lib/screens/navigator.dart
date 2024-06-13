@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:gitmate/const/colors.dart';
 import 'package:gitmate/screens/calendar/calendar_screen.dart';
 import 'package:gitmate/screens/community/community_screen.dart';
 import 'package:gitmate/screens/home/home_screen.dart';
 import 'package:gitmate/screens/info/info_screen.dart';
 import 'package:gitmate/screens/profile/profile_screen.dart';
-import 'package:gitmate/utils/colors.dart';
-import 'package:motion_tab_bar/motiontabbar.dart';
+import 'package:motion_tab_bar/MotionTabBar.dart';
 
 class MainNavigator extends StatefulWidget {
   const MainNavigator({super.key});
@@ -40,7 +40,7 @@ class _MainNavigatorState extends State<MainNavigator> {
         initialSelectedTab: "홈",
         tabSize: 50,
         tabIconColor: Colors.grey,
-        tabSelectedColor: PRIMARY_COLOR,
+        tabSelectedColor: AppColors.primaryColor,
         onTabItemSelected: (int index) {
           setState(() {
             _selectedIndex = index;
@@ -53,7 +53,7 @@ class _MainNavigatorState extends State<MainNavigator> {
           Icons.calendar_month_sharp,
           Icons.person,
         ],
-        textStyle: const TextStyle(color: PRIMARY_COLOR),
+        textStyle: const TextStyle(color: AppColors.primaryColor),
       ),
     );
   }

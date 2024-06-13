@@ -1,24 +1,15 @@
 import 'package:flutter/material.dart';
 
-class InfoScreen extends StatelessWidget {
+class InfoScreen extends StatefulWidget {
   const InfoScreen({super.key});
 
   @override
+  State<InfoScreen> createState() => _InfoScreenState();
+}
+
+class _InfoScreenState extends State<InfoScreen> {
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        elevation: 3,
-        title: Text('정보'),
-      ),
-      body: ListView(
-        children: [
-          Container(
-            height: 1000,
-            color: Colors.red,
-          ),
-        ],
-      ),
-    );
+    return const Placeholder();
   }
 }

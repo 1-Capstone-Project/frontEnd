@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gitmate/const/colors.dart';
 import 'package:gitmate/screens/splash_screen.dart';
-import 'package:gitmate/utils/colors.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,11 +12,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData(
-        scaffoldBackgroundColor: BACKGROUND_COLOR,
-        fontFamily: 'NotoSans',
-      ),
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        fontFamily: 'NotoSans',
+        scaffoldBackgroundColor: AppColors.backgroundColor,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppColors.backgroundColor,
+        ),
+      ),
       home: SplashScreen(),
     );
   }
