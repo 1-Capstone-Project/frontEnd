@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gitmate/const/colors.dart';
-import 'package:gitmate/screens/navigator.dart';
 import 'package:gitmate/screens/sign/sigin_screen.dart';
 
 class SplashScreen extends StatefulWidget {
