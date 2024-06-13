@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gitmate/const/colors.dart';
+import 'add_post_screen.dart';
+import 'dart:io';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -8,8 +11,8 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  final List<Map<String, String>> posts = [];
-  final List<Map<String, String>> filteredPosts = [];
+  final List<Map<String, dynamic>> posts = [];
+  final List<Map<String, dynamic>> filteredPosts = [];
   final TextEditingController searchController = TextEditingController();
 
   @override
@@ -24,59 +27,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
     super.dispose();
   }
 
-  void _addPost() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        final titleController = TextEditingController();
-        final contentController = TextEditingController();
-        final imageController = TextEditingController();
-
-        return AlertDialog(
-          title: Text("새 게시물 추가"),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: InputDecoration(hintText: "제목"),
-                ),
-                TextField(
-                  controller: contentController,
-                  decoration: InputDecoration(hintText: "내용"),
-                ),
-                TextField(
-                  controller: imageController,
-                  decoration: InputDecoration(hintText: "이미지 URL"),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("취소"),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  posts.add({
-                    "title": titleController.text,
-                    "content": contentController.text,
-                    "image": imageController.text,
-                  });
-                  _filterPosts();
-                });
-                Navigator.of(context).pop();
-              },
-              child: Text("추가"),
-            ),
-          ],
-        );
-      },
-    );
+  void _addPost(String title, String content, File? image) {
+    setState(() {
+      posts.add({
+        "title": title,
+        "content": content,
+        "image": image,
+      });
+      _filterPosts();
+    });
   }
 
   void _filterPosts() {
@@ -95,59 +54,92 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        centerTitle: false,
-        title: Text("커뮤니티"),
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(48.0),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                hintText: "검색",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                prefixIcon: Icon(Icons.search),
+      appBar: _buildAppBar(),
+      body: _buildPostList(),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: SizedBox(
+          width: 60,
+          height: 60,
+          child: _buildFloatingActionButton(),
+        ),
+      ),
+    );
+  }
+
+  AppBar _buildAppBar() {
+    return AppBar(
+      automaticallyImplyLeading: false,
+      centerTitle: false,
+      title: const Text("커뮤니티"),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(48.0),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: TextField(
+            controller: searchController,
+            decoration: InputDecoration(
+              hintText: "검색",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                borderSide: BorderSide.none,
               ),
+              filled: true,
+              fillColor: Colors.white,
+              prefixIcon: Icon(Icons.search),
             ),
           ),
         ),
       ),
-      body: ListView.builder(
-        itemCount: filteredPosts.length,
-        itemBuilder: (context, index) {
-          final post = filteredPosts[index];
-          return Card(
-            margin: EdgeInsets.all(8.0),
-            child: Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (post["image"] != null && post["image"]!.isNotEmpty)
-                    Image.network(post["image"]!),
-                  Text(
-                    post["title"] ?? "",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8.0),
-                  Text(post["content"] ?? ""),
-                ],
-              ),
+    );
+  }
+
+  ListView _buildPostList() {
+    return ListView.builder(
+      itemCount: filteredPosts.length,
+      itemBuilder: (context, index) {
+        final post = filteredPosts[index];
+        return _buildPostCard(post);
+      },
+    );
+  }
+
+  Card _buildPostCard(Map<String, dynamic> post) {
+    return Card(
+      margin: const EdgeInsets.all(8.0),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (post["image"] != null) Image.file(post["image"]),
+            Text(
+              post["title"] ?? "",
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-          );
-        },
+            const SizedBox(height: 8.0),
+            Text(post["content"] ?? ""),
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addPost,
-        child: Icon(Icons.add),
-      ),
+    );
+  }
+
+  FloatingActionButton _buildFloatingActionButton() {
+    return FloatingActionButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddPostScreen(addPost: _addPost),
+          ),
+        );
+      },
+      backgroundColor: AppColors.primaryColor,
+      foregroundColor: AppColors.backgroundColor,
+      elevation: 10,
+      shape: const CircleBorder(),
+      child: const Icon(Icons.edit),
     );
   }
 }
