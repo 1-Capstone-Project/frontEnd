@@ -27,6 +27,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             backgroundColor: AppColors.primaryColor,
             foregroundColor: AppColors.backgroundColor,
             shape: CircleBorder(),
+            elevation: 10,
             child: Icon(Icons.calendar_month),
           ),
         ),

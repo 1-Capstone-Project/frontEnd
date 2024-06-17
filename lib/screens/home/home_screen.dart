@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:gitmate/const/colors.dart';
 import 'detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -28,27 +29,62 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _currentIndex = 0;
 
+  Future<void> _refresh() async {
+    // 새로고침 로직 추가
+    await Future.delayed(Duration(seconds: 2)); // 2초 동안 대기
+    // 여기에서 데이터를 새로 불러오거나 갱신할 수 있습니다.
+    setState(() {
+      // 데이터 갱신 로직 추가
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: AppColors.primaryColor,
         automaticallyImplyLeading: false,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        title: Text("홈"),
-      ),
-      body: ListView(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildImageSlider(),
-              _buildEventSection("최근 이벤트"),
-              _buildEventSection("마감임박"),
-            ],
+        titleSpacing: 0.0, // 기본 타이틀과 리딩 간의 간격을 줄임
+        title: const Padding(
+          padding: EdgeInsets.only(left: 8.0), // 원하는 간격으로 설정
+          child: Text(
+            "GitMate",
+            style: TextStyle(
+              color: AppColors.backgroundColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        leadingWidth: 50.0, // 리딩 위젯의 너비를 줄임
+        leading: Padding(
+          padding: EdgeInsets.only(left: 8.0), // 원하는 간격으로 설정
+          child: Image.asset(
+            'assets/images/logo.png',
+            color: AppColors.backgroundColor,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.notifications,
+              color: AppColors.backgroundColor,
+            ),
           ),
         ],
+      ),
+      body: RefreshIndicator(
+        color: AppColors.primaryColor,
+        onRefresh: _refresh,
+        child: ListView(
+          children: [
+            _buildImageSlider(),
+            _buildEventSection("최근 이벤트"),
+            _buildEventSection("마감임박"),
+          ],
+        ),
       ),
     );
   }
@@ -114,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     shape: BoxShape.circle,
                     color: (Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
-                            : Colors.white)
+                            : Colors.grey)
                         .withOpacity(_currentIndex == entry.key ? 0.9 : 0.4),
                   ),
                 ),

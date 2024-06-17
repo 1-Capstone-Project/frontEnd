@@ -48,6 +48,7 @@ dependencies:
   url_launcher: ^6.3.0
   carousel_slider: ^4.2.1
   image_picker: ^1.1.2
+  amazon_cognito_identity_dart_2: ^3.6.5
 
 dev_dependencies:
   flutter_test:
