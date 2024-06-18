@@ -31,35 +31,43 @@ class _InfoScreenState extends State<InfoScreen> {
           await http.get(Uri.parse('http://127.0.0.1:8080/company_info'));
 
       if (response.statusCode == 200) {
-        setState(() {
-          _companyInfo = json.decode(response.body);
-          _filteredCompanyInfo = _companyInfo;
-          _isLoading = false;
-          _errorMessage = '';
-        });
+        if (mounted) {
+          setState(() {
+            _companyInfo = json.decode(response.body);
+            _filteredCompanyInfo = _companyInfo;
+            _isLoading = false;
+            _errorMessage = '';
+          });
+        }
       } else {
-        setState(() {
-          _isLoading = false;
-          _errorMessage =
-              'Failed to load company info. Status code: ${response.statusCode}';
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage =
+                'Failed to load company info. Status code: ${response.statusCode}';
+          });
+        }
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Failed to load company info. Error: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load company info. Error: $e';
+        });
+      }
     }
   }
 
   void _filterCompanyInfo() {
     final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredCompanyInfo = _companyInfo.where((company) {
-        final companyName = company['company_name'].toString().toLowerCase();
-        return companyName.contains(query);
-      }).toList();
-    });
+    if (mounted) {
+      setState(() {
+        _filteredCompanyInfo = _companyInfo.where((company) {
+          final companyName = company['company_name'].toString().toLowerCase();
+          return companyName.contains(query);
+        }).toList();
+      });
+    }
   }
 
   @override
