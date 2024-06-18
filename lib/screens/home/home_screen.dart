@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:gitmate/const/colors.dart';
-import 'detail_screen.dart';
+import 'home_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,15 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   int _currentIndex = 0;
-
-  Future<void> _refresh() async {
-    // 새로고침 로직 추가
-    await Future.delayed(Duration(seconds: 2)); // 2초 동안 대기
-    // 여기에서 데이터를 새로 불러오거나 갱신할 수 있습니다.
-    setState(() {
-      // 데이터 갱신 로직 추가
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,16 +66,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        color: AppColors.primaryColor,
-        onRefresh: _refresh,
-        child: ListView(
-          children: [
-            _buildImageSlider(),
-            _buildEventSection("최근 이벤트"),
-            _buildEventSection("마감임박"),
-          ],
-        ),
+      body: ListView(
+        children: [
+          _buildImageSlider(),
+          _buildEventSection("최근 이벤트"),
+          _buildEventSection("마감임박"),
+        ],
       ),
     );
   }
