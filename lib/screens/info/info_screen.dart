@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gitmate/const/colors.dart';
-import 'package:gitmate/screens/info/info_detail_screen.dart'; // 추가된 라인
+import 'package:gitmate/screens/info/info_detail_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -12,11 +12,13 @@ class InfoScreen extends StatefulWidget {
 }
 
 class _InfoScreenState extends State<InfoScreen> {
-  List<dynamic> _companyInfo = [];
+  final List<dynamic> _companyInfo = [];
   List<dynamic> _filteredCompanyInfo = [];
-  bool _isLoading = true;
+  bool _isLoading = false; // 초기 로딩 상태를 false로 설정
+  bool _hasMoreData = true;
   String _errorMessage = '';
   final TextEditingController _searchController = TextEditingController();
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -26,48 +28,51 @@ class _InfoScreenState extends State<InfoScreen> {
   }
 
   Future<void> _fetchCompanyInfo() async {
+    if (!_hasMoreData || _isLoading) return; // 추가 데이터가 없거나 로딩 중이면 중단
+
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final response =
-          await http.get(Uri.parse('http://127.0.0.1:8080/company_info'));
+      final response = await http.get(Uri.parse(
+          'http://gitmate-backend.com:8080/company_info?page=$_currentPage&limit=20'));
 
       if (response.statusCode == 200) {
-        if (mounted) {
-          setState(() {
-            _companyInfo = json.decode(response.body);
-            _filteredCompanyInfo = _companyInfo;
-            _isLoading = false;
-            _errorMessage = '';
-          });
+        final List<dynamic> fetchedData = json.decode(response.body);
+        if (fetchedData.length < 20) {
+          // 더 이상 로드할 데이터가 충분하지 않으면
+          _hasMoreData = false;
         }
+        setState(() {
+          _companyInfo.addAll(fetchedData);
+          _filteredCompanyInfo = _companyInfo;
+          if (fetchedData.isNotEmpty) {
+            // 불러온 데이터가 있다면 페이지 번호 증가
+            _currentPage++;
+          }
+        });
       } else {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _errorMessage =
-                'Failed to load company info. Status code: ${response.statusCode}';
-          });
-        }
+        _errorMessage =
+            'Failed to load company info. Status code: ${response.statusCode}';
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'Failed to load company info. Error: $e';
-        });
-      }
+      _errorMessage = 'Failed to load company info. Error: $e';
+    } finally {
+      setState(() {
+        _isLoading = false; // 로딩 상태 해제
+      });
     }
   }
 
   void _filterCompanyInfo() {
     final query = _searchController.text.toLowerCase();
-    if (mounted) {
-      setState(() {
-        _filteredCompanyInfo = _companyInfo.where((company) {
-          final companyName = company['company_name'].toString().toLowerCase();
-          return companyName.contains(query);
-        }).toList();
-      });
-    }
+    setState(() {
+      _filteredCompanyInfo = _companyInfo.where((company) {
+        final companyName = company['company_name'].toString().toLowerCase();
+        return companyName.contains(query);
+      }).toList();
+    });
   }
 
   @override
@@ -85,7 +90,7 @@ class _InfoScreenState extends State<InfoScreen> {
         scrolledUnderElevation: 0,
         title: const Text("취업"),
       ),
-      body: _isLoading
+      body: _isLoading && _companyInfo.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage.isNotEmpty
               ? Center(child: Text(_errorMessage))
@@ -119,66 +124,78 @@ class _InfoScreenState extends State<InfoScreen> {
                       ],
                     ),
                     Expanded(
-                      child: Scrollbar(
-                        thumbVisibility: true,
-                        child: ListView.builder(
-                          itemCount: _filteredCompanyInfo.length,
-                          itemBuilder: (context, index) {
-                            final company = _filteredCompanyInfo[index];
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => InfoDetailScreen(
-                                      company: company,
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (ScrollNotification scrollInfo) {
+                          if (scrollInfo.metrics.pixels ==
+                                  scrollInfo.metrics.maxScrollExtent &&
+                              !_isLoading &&
+                              _hasMoreData) {
+                            _fetchCompanyInfo();
+                          }
+                          return false;
+                        },
+                        child: Scrollbar(
+                          thumbVisibility: true,
+                          child: ListView.builder(
+                            itemCount: _filteredCompanyInfo.length,
+                            itemBuilder: (context, index) {
+                              final company = _filteredCompanyInfo[index];
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => InfoDetailScreen(
+                                        company: company,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                              child: Card(
-                                color: AppColors.backgroundColor,
-                                margin: const EdgeInsets.all(8.0),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      if (company['image_url'] != null &&
-                                          company['image_url'].isNotEmpty)
-                                        Center(
-                                          child: Container(
-                                            width: double.infinity,
-                                            height: 180,
-                                            child: Image.network(
-                                              company['image_url'],
-                                              fit: BoxFit.cover,
+                                  );
+                                },
+                                child: Card(
+                                  color: AppColors.backgroundColor,
+                                  margin: const EdgeInsets.all(8.0),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        if (company['image_url'] != null &&
+                                            company['image_url'].isNotEmpty)
+                                          Center(
+                                            child: Container(
+                                              width: double.infinity,
+                                              height: 180,
+                                              child: Image.network(
+                                                company['image_url'],
+                                                fit: BoxFit.cover,
+                                              ),
                                             ),
                                           ),
+                                        const SizedBox(height: 8.0),
+                                        Text(
+                                          company['company_name'],
+                                          style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold),
                                         ),
-                                      const SizedBox(height: 8.0),
-                                      Text(
-                                        company['company_name'],
-                                        style: const TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(height: 8.0),
-                                      Text(
-                                          'Headquarters: ${company['headquarters_location']}'),
-                                      Text('Industry: ${company['industry']}'),
-                                      Text('Welfare: ${company['welfare']}'),
-                                      Text(
-                                          'Recruitment Method: ${company['recruitment_method']}'),
-                                      Text(
-                                          'Requirements: ${company['requirements']}'),
-                                    ],
+                                        const SizedBox(height: 8.0),
+                                        Text(
+                                            'Headquarters: ${company['headquarters_location']}'),
+                                        Text(
+                                            'Industry: ${company['industry']}'),
+                                        Text('Welfare: ${company['welfare']}'),
+                                        Text(
+                                            'Recruitment Method: ${company['recruitment_method']}'),
+                                        Text(
+                                            'Requirements: ${company['requirements']}'),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),

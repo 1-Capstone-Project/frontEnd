@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gitmate/const/colors.dart';
 import 'add_event_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -12,12 +14,50 @@ class CalendarScreen extends StatefulWidget {
 class _CalendarScreenState extends State<CalendarScreen> {
   List<Map<String, dynamic>> _events = [];
 
-  void _addEvent(DateTime date, String title, String content) {
+  @override
+  void initState() {
+    super.initState();
+    _fetchEvents();
+  }
+
+  Future<void> _fetchEvents() async {
+    try {
+      final response =
+          await http.get(Uri.parse('http://127.0.0.1:8080/schedules'));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> events = json.decode(response.body);
+        setState(() {
+          _events = events.map((event) {
+            return {
+              'date': DateTime.parse(event['schedule_date']),
+              'title': event['title'],
+              'content': event['description'],
+              'start_time': event['start_time'],
+              'end_time': event['end_time'],
+            };
+          }).toList();
+        });
+      } else {
+        print('Failed to load events. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        throw Exception('Failed to load events');
+      }
+    } catch (e) {
+      print('Exception: $e');
+      throw Exception('Failed to load events');
+    }
+  }
+
+  void _addEvent(DateTime date, String title, String content, String startTime,
+      String endTime) {
     setState(() {
       _events.add({
         'date': date,
         'title': title,
         'content': content,
+        'start_time': startTime,
+        'end_time': endTime,
       });
     });
   }
@@ -52,22 +92,37 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
         ),
       ),
-      body: ListView.builder(
-        itemCount: _events.length,
-        itemBuilder: (context, index) {
-          final event = _events[index];
-          return Card(
-            margin: EdgeInsets.all(8.0),
-            child: ListTile(
-              title: Text(event['title']),
-              subtitle: Text(event['content']),
-              trailing: Text(
-                "${event['date'].year}-${event['date'].month}-${event['date'].day}",
-              ),
+      body: _events.isEmpty
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: _events.length,
+              itemBuilder: (context, index) {
+                final event = _events[index];
+                return Card(
+                  margin: EdgeInsets.all(8.0),
+                  child: ListTile(
+                    title: Text(event['title']),
+                    subtitle: Text(event['content']),
+                    trailing: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          "${event['date'].year}-${event['date'].month.toString().padLeft(2, '0')}-${event['date'].day.toString().padLeft(2, '0')}",
+                        ),
+                        if (event['start_time'] != null &&
+                            event['end_time'] != null) ...[
+                          Text("시작: ${event['start_time']}"),
+                          Text("종료: ${event['end_time']}"),
+                        ] else if (event['start_time'] == null &&
+                            event['end_time'] == null) ...[
+                          Text("하루 종일"),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }
