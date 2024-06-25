@@ -27,25 +27,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
       if (response.statusCode == 200) {
         final List<dynamic> events = json.decode(response.body);
+
+        print('Decoded events: $events');
+
         setState(() {
           _events = events.map((event) {
-            return {
-              'date': DateTime.parse(event['schedule_date']),
-              'title': event['title'],
-              'content': event['description'],
-              'start_time': event['start_time'],
-              'end_time': event['end_time'],
-            };
+            try {
+              return {
+                'date': DateTime.parse(event['schedule_date']),
+                'title': event['title'],
+                'content': event['description'],
+                'start_time':
+                    event['start_time'] == '' ? null : event['start_time'],
+                'end_time': event['end_time'] == '' ? null : event['end_time'],
+              };
+            } catch (e) {
+              rethrow;
+            }
           }).toList();
         });
       } else {
-        print('Failed to load events. Status code: ${response.statusCode}');
-        print('Response body: ${response.body}');
         throw Exception('Failed to load events');
       }
     } catch (e) {
       print('Exception: $e');
-      throw Exception('Failed to load events');
     }
   }
 
@@ -68,7 +73,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         centerTitle: false,
-        title: Text("일정"),
+        scrolledUnderElevation: 0,
+        backgroundColor: AppColors.primaryColor,
+        title: const Text(
+          "일정",
+          style: TextStyle(
+            color: AppColors.backgroundColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leadingWidth: 50.0, // 리딩 위젯의 너비를 줄임
+        leading: Padding(
+          padding: EdgeInsets.only(left: 8.0), // 원하는 간격으로 설정
+          child: Image.asset(
+            'assets/images/logo.png',
+            color: AppColors.backgroundColor,
+          ),
+        ),
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.all(10.0),

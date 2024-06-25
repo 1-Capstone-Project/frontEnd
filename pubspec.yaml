@@ -50,6 +50,8 @@ dependencies:
   image_picker: ^1.1.2
   amazon_cognito_identity_dart_2: ^3.6.5
   intl: ^0.19.0
+  aws_s3_plugin: ^0.0.1
+  aws_s3_private_flutter: ^0.0.5
 
 dev_dependencies:
   flutter_test:

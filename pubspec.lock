@@ -33,6 +33,38 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.11.0"
+  aws_s3_android:
+    dependency: transitive
+    description:
+      name: aws_s3_android
+      sha256: "1e0496f15884fbec9ef41e91ed19da436f8b8132e22a95325780d327db87d1cb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.1"
+  aws_s3_ios:
+    dependency: transitive
+    description:
+      name: aws_s3_ios
+      sha256: "717558ac0c39145f27f8bc2d87e3124dd4f92ddeb060187cc98ddfa7cfe0788c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.1"
+  aws_s3_plugin:
+    dependency: "direct main"
+    description:
+      name: aws_s3_plugin
+      sha256: "15ac15a6ef8b0918eef51b79c5618d7aaf8436c52753c6189323b18504bcfd03"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.1"
+  aws_s3_private_flutter:
+    dependency: "direct main"
+    description:
+      name: aws_s3_private_flutter
+      sha256: "7012a9c89fab4c0b800381be15959830746e145285972b0430495e7c4c82bb09"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.5"
   boolean_selector:
     dependency: transitive
     description:
@@ -214,6 +246,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_aws_s3_platform_interface:
+    dependency: transitive
+    description:
+      name: flutter_aws_s3_platform_interface
+      sha256: "629e84b6e9ca4d7700b84720b2177d279ba816e3bb63946e092750b8cfee6f25"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.1"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -368,6 +408,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.1"
+  json_annotation:
+    dependency: transitive
+    description:
+      name: json_annotation
+      sha256: "1ce844379ca14835a50d2f019a3099f419082cfdd231cd86a142af94dd5c6bb1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.9.0"
   leak_tracker:
     dependency: transitive
     description:
@@ -653,6 +701,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.1"
+  uuid:
+    dependency: transitive
+    description:
+      name: uuid
+      sha256: "648e103079f7c64a36dc7d39369cabb358d377078a051d6ae2ad3aa539519313"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.7"
   vector_math:
     dependency: transitive
     description:

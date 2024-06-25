@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:gitmate/const/colors.dart';
-import 'home_detail_screen.dart';
+import 'package:gitmate/screens/home/home_detail_screen.dart';
+import 'package:gitmate/screens/info/info_detail_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +31,45 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   int _currentIndex = 0;
+  List<dynamic> _companyInfo = [];
+  bool _isLoading = true;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCompanyInfo();
+  }
+
+  Future<void> _fetchCompanyInfo() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http
+          .get(Uri.parse('http://127.0.0.1:8080/company_info?page=1&limit=10'));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> fetchedData = json.decode(response.body);
+        setState(() {
+          _companyInfo = fetchedData;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage =
+              'Failed to load company info. Status code: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load company info. Error: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,15 +79,11 @@ class _HomeScreenState extends State<HomeScreen> {
         automaticallyImplyLeading: false,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleSpacing: 0.0, // 기본 타이틀과 리딩 간의 간격을 줄임
-        title: const Padding(
-          padding: EdgeInsets.only(left: 8.0), // 원하는 간격으로 설정
-          child: Text(
-            "GitMate",
-            style: TextStyle(
-              color: AppColors.backgroundColor,
-              fontWeight: FontWeight.bold,
-            ),
+        title: Text(
+          "GitMate",
+          style: TextStyle(
+            color: AppColors.backgroundColor,
+            fontWeight: FontWeight.bold,
           ),
         ),
         leadingWidth: 50.0, // 리딩 위젯의 너비를 줄임
@@ -69,8 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         children: [
           _buildImageSlider(),
-          _buildEventSection("최근 이벤트"),
-          _buildEventSection("마감임박"),
+          _buildEventSection("채용중인 기업"),
         ],
       ),
     );
@@ -162,8 +199,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: Row(
-            children: _buildEventContainers(),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: _buildEventContainers(),
+            ),
           ),
         ),
       ],
@@ -171,33 +211,79 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildEventContainers() {
-    return sliderImagePaths.map((path) {
-      return GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetailScreen(
-                imagePath: path,
-                title: 'Event Image',
+    if (_isLoading) {
+      return [
+        const Center(
+            child: CircularProgressIndicator(
+          color: AppColors.primaryColor,
+        )),
+      ];
+    } else if (_errorMessage.isNotEmpty) {
+      return [
+        Center(
+          child: Text(_errorMessage),
+        ),
+      ];
+    } else {
+      return _companyInfo.map((company) {
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => InfoDetailScreen(
+                  company: company,
+                ),
               ),
+            );
+          },
+          child: Container(
+            width: 150,
+            height: 180,
+            margin: const EdgeInsets.symmetric(horizontal: 8.0),
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              border: Border.all(color: AppColors.primaryColor, width: 0.5),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.6),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: Offset(3, 5), // changes position of shadow
+                ),
+              ],
+              image: company['image_url'] != null
+                  ? DecorationImage(
+                      image: NetworkImage(company['image_url']),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-          );
-        },
-        child: Container(
-          width: 150,
-          height: 180,
-          margin: const EdgeInsets.symmetric(horizontal: 8.0),
-          decoration: BoxDecoration(
-            color: Colors.blue,
-            borderRadius: BorderRadius.circular(10),
-            image: DecorationImage(
-              image: AssetImage(path),
-              fit: BoxFit.fill,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    company['company_name'],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      );
-    }).toList();
+        );
+      }).toList();
+    }
   }
 }

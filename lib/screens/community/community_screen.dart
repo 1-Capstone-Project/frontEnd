@@ -69,19 +69,33 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   AppBar _buildAppBar() {
     return AppBar(
+      backgroundColor: AppColors.primaryColor,
       automaticallyImplyLeading: false,
       centerTitle: false,
-      title: const Text("커뮤니티"),
+      leadingWidth: 50.0, // 리딩 위젯의 너비를 줄임
+      leading: Padding(
+        padding: EdgeInsets.only(left: 8.0), // 원하는 간격으로 설정
+        child: Image.asset(
+          'assets/images/logo.png',
+          color: AppColors.backgroundColor,
+        ),
+      ),
+      title: const Text(
+        "커뮤니티",
+        style: TextStyle(
+          color: AppColors.backgroundColor,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(48.0),
+        preferredSize: const Size.fromHeight(60.0),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: TextField(
             controller: searchController,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               hintText: "검색",
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10.0),
                 borderSide: BorderSide.none,
               ),
               filled: true,
