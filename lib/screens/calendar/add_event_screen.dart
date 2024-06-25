@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gitmate/const/colors.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
@@ -82,6 +83,24 @@ class _AddEventScreenState extends State<AddEventScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TableCalendar(
+                calendarStyle: CalendarStyle(
+                  selectedDecoration: BoxDecoration(
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+                headerStyle: HeaderStyle(
+                  formatButtonTextStyle: TextStyle(
+                    color: AppColors.primaryColor,
+                  ),
+                  leftChevronIcon: Icon(
+                    Icons.arrow_back_ios,
+                    color: AppColors.primaryColor,
+                  ),
+                  rightChevronIcon: Icon(
+                    Icons.arrow_forward_ios,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
                 firstDay: DateTime.utc(2000, 1, 1),
                 lastDay: DateTime.utc(2100, 12, 31),
                 focusedDay: _selectedDate,

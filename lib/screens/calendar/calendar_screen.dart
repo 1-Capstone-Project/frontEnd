@@ -114,7 +114,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
       ),
       body: _events.isEmpty
-          ? Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+              color: AppColors.primaryColor,
+            ))
           : ListView.builder(
               itemCount: _events.length,
               itemBuilder: (context, index) {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gitmate/screens/sign/sigin_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gitmate/screens/profile/account_screen.dart';
+import 'package:gitmate/screens/sign/sign_in_screen.dart';
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
@@ -9,66 +11,74 @@ class SettingScreen extends StatefulWidget {
 }
 
 class _SettingScreenState extends State<SettingScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  Future<void> _signOut() async {
+    await _auth.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const SignInScreen(),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+      (Route<dynamic> route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
-        title: Text("설정"),
+        title: const Text("설정"),
       ),
       body: ListView(
         children: [
           ListTile(
-            title: Text("계정"),
-            leading: Icon(Icons.account_circle),
+            title: const Text("계정"),
+            leading: const Icon(Icons.account_circle),
             onTap: () {
-              // 계정 설정 화면으로 이동
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AccountScreen()),
+              );
               print("계정 설정 클릭됨");
             },
           ),
           ListTile(
-            title: Text("알림"),
-            leading: Icon(Icons.notifications),
+            title: const Text("알림"),
+            leading: const Icon(Icons.notifications),
             onTap: () {
               // 알림 설정 화면으로 이동
               print("알림 설정 클릭됨");
             },
           ),
           ListTile(
-            title: Text("프라이버시"),
-            leading: Icon(Icons.lock),
+            title: const Text("프라이버시"),
+            leading: const Icon(Icons.lock),
             onTap: () {
               // 프라이버시 설정 화면으로 이동
               print("프라이버시 설정 클릭됨");
             },
           ),
           ListTile(
-            title: Text("일반"),
-            leading: Icon(Icons.settings),
+            title: const Text("일반"),
+            leading: const Icon(Icons.settings),
             onTap: () {
               // 일반 설정 화면으로 이동
               print("일반 설정 클릭됨");
             },
           ),
-          Divider(),
+          const Divider(),
           ListTile(
-            title: Text(
+            title: const Text(
               "로그아웃",
               style: TextStyle(color: Colors.red),
             ),
-            leading: Icon(Icons.logout, color: Colors.red),
-            onTap: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      SiginScreen(),
-                  transitionDuration: Duration.zero,
-                  reverseTransitionDuration: Duration.zero,
-                ),
-                (Route<dynamic> route) => false,
-              );
-            },
+            leading: const Icon(Icons.logout, color: Colors.red),
+            onTap: _signOut,
           ),
         ],
       ),
