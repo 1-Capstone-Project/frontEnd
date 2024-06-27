@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "496653278686",
-    "project_id": "gitmate-add2e",
-    "storage_bucket": "gitmate-add2e.appspot.com"
+    "project_number": "19321885946",
+    "project_id": "gitmate2",
+    "storage_bucket": "gitmate2.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:496653278686:android:fa538d6fd7d7d89ca4d14f",
+        "mobilesdk_app_id": "1:19321885946:android:6db93c4cf4402c075e2543",
         "android_client_info": {
           "package_name": "student.developer.jinhyeon.gitmate"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCmOmJXPpeStJtYq4hZlJpwDoLzX-oGKo0"
+          "current_key": "AIzaSyDVUFQAyjQPijiYl5iyddJnyQHgSLXHJyw"
         }
       ],
       "services": {

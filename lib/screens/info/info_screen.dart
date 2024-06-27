@@ -234,6 +234,14 @@ class _InfoScreenState extends State<InfoScreen> {
                                               ),
                                             ],
                                           ),
+                                          Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                                20, 0, 20, 0),
+                                            child: Divider(
+                                              color: Colors.grey,
+                                              thickness: 0.1,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ],

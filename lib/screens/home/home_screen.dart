@@ -118,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         CarouselSlider(
           options: CarouselOptions(
-            height: MediaQuery.of(context).size.height / 2.5,
+            // height: MediaQuery.of(context).size.height / 2.5,
             viewportFraction: 1.0,
             autoPlay: true,
             onPageChanged: (index, reason) {
@@ -143,7 +143,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                   child: Container(
-                    width: MediaQuery.of(context).size.width,
                     decoration: BoxDecoration(
                       image: DecorationImage(
                         image: AssetImage(path),
@@ -243,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 8.0),
             decoration: BoxDecoration(
               color: Colors.blue,
-              border: Border.all(color: AppColors.primaryColor, width: 0.5),
+              // border: Border.all(color: AppColors.primaryColor, width: 0.5),
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
@@ -265,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(vertical: 5.0),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(10),

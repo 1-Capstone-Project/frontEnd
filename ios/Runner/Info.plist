@@ -56,5 +56,29 @@
 	<string>We need your permission to use the microphone to record videos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>We need your permission to save photos to your photo library.</string>
+
+
+	<key>NSAppTransportSecurity</key>
+	<dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <true/>
+	</dict>
+
+	<key>CFBundleURLTypes</key>
+	<array>
+    <dict>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>com.example.your_package_name</string>
+        </array>
+    </dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+    <string>google</string>
+    <string>com.googleusercontent.apps.YOUR_IOS_CLIENT_ID</string>
+</array>
 </dict>
 </plist>

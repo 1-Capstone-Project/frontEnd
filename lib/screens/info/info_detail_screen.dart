@@ -51,7 +51,7 @@ class InfoDetailScreen extends StatelessWidget {
                     children: [
                       Text(
                         company['company_name'],
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
@@ -60,11 +60,8 @@ class InfoDetailScreen extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      Text('${company['headquarters_location']}' +
-                          '·' +
-                          '${company['industry']}' +
-                          '·' +
-                          '${company['recruitment_method']}'),
+                      Text(
+                          '${company['headquarters_location']}·${company['industry']}·${company['recruitment_method']}'),
                     ],
                   ),
                 ],

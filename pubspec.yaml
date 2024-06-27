@@ -52,6 +52,14 @@ dependencies:
   intl: ^0.19.0
   aws_s3_plugin: ^0.0.1
   aws_s3_private_flutter: ^0.0.5
+  cloud_firestore: ^5.0.1
+  webview_flutter: ^4.8.0
+  flutter_signin_button: ^2.0.0
+  google_sign_in: ^6.2.1
+  firebase_storage: ^12.0.1
+  retry: ^3.1.2
+  image: ^4.2.0
+  multi_image_picker: ^4.8.01
 
 dev_dependencies:
   flutter_test:

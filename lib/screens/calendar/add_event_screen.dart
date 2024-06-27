@@ -1,12 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:gitmate/const/colors.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddEventScreen extends StatefulWidget {
-  final Function(DateTime, String, String, String, String) onAddEvent;
+  final Function(DateTime, String, String, String, String, List<String>)
+      onAddEvent;
 
   const AddEventScreen({super.key, required this.onAddEvent});
 
@@ -22,45 +25,83 @@ class _AddEventScreenState extends State<AddEventScreen> {
   TimeOfDay? _endTime;
   bool _allDay = false;
   CalendarFormat _calendarFormat = CalendarFormat.month;
+  List<File> _selectedImages = [];
+  bool _isLoading = false;
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  Future<void> _pickImage() async {
+    final pickedFiles = await ImagePicker().pickMultiImage();
+    if (pickedFiles != null) {
+      setState(() {
+        _selectedImages = pickedFiles.map((file) => File(file.path)).toList();
+      });
+    }
+  }
 
   Future<void> _submitEvent() async {
-    final startTimeStr = _allDay ? null : _startTime?.format(context);
-    final endTimeStr = _allDay ? null : _endTime?.format(context);
+    if (_titleController.text.isEmpty || _contentController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('제목과 내용을 입력해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    widget.onAddEvent(
-      _selectedDate,
-      _titleController.text,
-      _contentController.text,
-      startTimeStr ?? 'All Day',
-      endTimeStr ?? 'All Day',
-    );
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      final response = await http.post(
-        Uri.parse('http://127.0.0.1:8080/schedules'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, dynamic>{
-          'title': _titleController.text,
-          'description': _contentController.text,
-          'schedule_date': DateFormat('yyyy-MM-dd').format(_selectedDate),
-          'start_time': startTimeStr,
-          'end_time': endTimeStr,
-          'img_url': '',
-        }),
+      List<String> imageUrls = [];
+      if (_selectedImages.isNotEmpty) {
+        final user = _auth.currentUser;
+        for (var image in _selectedImages) {
+          final fileName =
+              'event_images/${user!.uid}_${DateTime.now().millisecondsSinceEpoch}_${_selectedImages.indexOf(image)}.jpg';
+          final snapshot = await _storage.ref(fileName).putFile(image);
+          final imageUrl = await snapshot.ref.getDownloadURL();
+          imageUrls.add(imageUrl);
+        }
+      }
+
+      final startTimeStr = _allDay ? null : _startTime?.format(context);
+      final endTimeStr = _allDay ? null : _endTime?.format(context);
+
+      widget.onAddEvent(
+        _selectedDate,
+        _titleController.text,
+        _contentController.text,
+        startTimeStr ?? 'All Day',
+        endTimeStr ?? 'All Day',
+        imageUrls,
       );
 
-      if (response.statusCode == 200) {
-        Navigator.pop(context);
-      } else {
-        print('Failed to add event. Status code: ${response.statusCode}');
-        print('Response body: ${response.body}');
-        throw Exception('Failed to add event');
-      }
+      await FirebaseFirestore.instance.collection('events').add({
+        'user_id': _auth.currentUser!.uid,
+        'schedule_date': _selectedDate.toIso8601String(),
+        'title': _titleController.text,
+        'description': _contentController.text,
+        'start_time': startTimeStr,
+        'end_time': endTimeStr,
+        'image_urls': imageUrls,
+      });
+
+      Navigator.pop(context);
     } catch (e) {
       print('Exception: $e');
-      // 필요하다면 여기서 사용자에게 오류를 알릴 수 있습니다.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to add event: $e'),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -69,7 +110,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
-        title: Text("일정 추가"),
+        title: const Text("일정 추가"),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -117,17 +158,39 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   });
                 },
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               TextField(
                 controller: _titleController,
-                decoration: InputDecoration(hintText: "제목"),
+                decoration: const InputDecoration(hintText: "제목"),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               TextField(
                 controller: _contentController,
-                decoration: InputDecoration(hintText: "내용"),
+                decoration: const InputDecoration(hintText: "내용"),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  color: Colors.grey[200],
+                  height: 150,
+                  child: Center(
+                    child: _selectedImages.isEmpty
+                        ? const Text("이미지 선택")
+                        : ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _selectedImages.length,
+                            itemBuilder: (context, index) {
+                              return Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Image.file(_selectedImages[index]),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               Row(
                 children: [
                   Checkbox(
@@ -142,7 +205,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       });
                     },
                   ),
-                  Text("하루종일")
+                  const Text("하루종일")
                 ],
               ),
               if (!_allDay) ...[
@@ -187,14 +250,18 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   ],
                 ),
               ],
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _submitEvent,
-                  child: Text("일정 만들기"),
+                  child: const Text("일정 만들기"),
                 ),
               ),
+              if (_isLoading)
+                const Center(
+                  child: CircularProgressIndicator(),
+                ),
             ],
           ),
         ),

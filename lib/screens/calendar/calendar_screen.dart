@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:gitmate/const/colors.dart';
 import 'add_event_screen.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -22,40 +24,43 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Future<void> _fetchEvents() async {
     try {
-      final response =
-          await http.get(Uri.parse('http://127.0.0.1:8080/schedules'));
+      final snapshot =
+          await FirebaseFirestore.instance.collection('events').get();
 
-      if (response.statusCode == 200) {
-        final List<dynamic> events = json.decode(response.body);
-
-        print('Decoded events: $events');
-
-        setState(() {
-          _events = events.map((event) {
-            try {
-              return {
-                'date': DateTime.parse(event['schedule_date']),
-                'title': event['title'],
-                'content': event['description'],
-                'start_time':
-                    event['start_time'] == '' ? null : event['start_time'],
-                'end_time': event['end_time'] == '' ? null : event['end_time'],
-              };
-            } catch (e) {
-              rethrow;
-            }
-          }).toList();
-        });
-      } else {
-        throw Exception('Failed to load events');
-      }
+      setState(() {
+        _events = snapshot.docs.map((doc) {
+          return {
+            'date': DateFormat('yyyy-MM-dd').parse(doc['schedule_date']),
+            'title': doc['title'],
+            'content': doc['description'],
+            'start_time': doc['start_time'],
+            'end_time': doc['end_time'],
+            'image_urls': List<String>.from(doc['image_urls']),
+            'user_id': doc['user_id'],
+          };
+        }).toList();
+      });
     } catch (e) {
       print('Exception: $e');
     }
   }
 
+  Future<Map<String, dynamic>> _fetchUserProfile(String userId) async {
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    return userDoc.exists
+        ? {
+            'nickname': userDoc['nickname'],
+            'profile_image': userDoc['imageUrl'],
+          }
+        : {
+            'nickname': 'Unknown',
+            'profile_image': null,
+          };
+  }
+
   void _addEvent(DateTime date, String title, String content, String startTime,
-      String endTime) {
+      String endTime, List<String> imageUrls) {
     setState(() {
       _events.add({
         'date': date,
@@ -63,6 +68,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
         'content': content,
         'start_time': startTime,
         'end_time': endTime,
+        'image_urls': imageUrls,
+        'user_id': FirebaseAuth.instance.currentUser!.uid,
       });
     });
   }
@@ -122,28 +129,67 @@ class _CalendarScreenState extends State<CalendarScreen> {
               itemCount: _events.length,
               itemBuilder: (context, index) {
                 final event = _events[index];
-                return Card(
-                  margin: EdgeInsets.all(8.0),
-                  child: ListTile(
-                    title: Text(event['title']),
-                    subtitle: Text(event['content']),
-                    trailing: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          "${event['date'].year}-${event['date'].month.toString().padLeft(2, '0')}-${event['date'].day.toString().padLeft(2, '0')}",
+                return FutureBuilder<Map<String, dynamic>>(
+                  future: _fetchUserProfile(event['user_id']),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final userProfile = snapshot.data!;
+                    return Card(
+                      margin: EdgeInsets.all(8.0),
+                      child: ListTile(
+                        title: Text(event['title']),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(event['content']),
+                            if (userProfile['profile_image'] != null)
+                              CircleAvatar(
+                                backgroundImage:
+                                    NetworkImage(userProfile['profile_image']),
+                                radius: 20,
+                              ),
+                            Text(userProfile['nickname']),
+                            if (event['image_urls'] != null)
+                              CarouselSlider(
+                                options: CarouselOptions(
+                                  height: 200.0,
+                                  enableInfiniteScroll: false,
+                                  enlargeCenterPage: true,
+                                ),
+                                items:
+                                    event['image_urls'].map<Widget>((imageUrl) {
+                                  return Builder(
+                                    builder: (BuildContext context) {
+                                      return Container(
+                                        width:
+                                            MediaQuery.of(context).size.width,
+                                        margin: EdgeInsets.symmetric(
+                                            horizontal: 5.0),
+                                        child: Image.network(imageUrl,
+                                            fit: BoxFit.cover),
+                                      );
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                            Text(
+                              "${event['date'].year}-${event['date'].month.toString().padLeft(2, '0')}-${event['date'].day.toString().padLeft(2, '0')}",
+                            ),
+                            if (event['start_time'] != null &&
+                                event['end_time'] != null) ...[
+                              Text("시작: ${event['start_time']}"),
+                              Text("종료: ${event['end_time']}"),
+                            ] else if (event['start_time'] == null &&
+                                event['end_time'] == null) ...[
+                              Text("하루 종일"),
+                            ],
+                          ],
                         ),
-                        if (event['start_time'] != null &&
-                            event['end_time'] != null) ...[
-                          Text("시작: ${event['start_time']}"),
-                          Text("종료: ${event['end_time']}"),
-                        ] else if (event['start_time'] == null &&
-                            event['end_time'] == null) ...[
-                          Text("하루 종일"),
-                        ],
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 );
               },
             ),

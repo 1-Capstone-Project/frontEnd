@@ -30,6 +30,7 @@ class _SignInScreenState extends State<SignInScreen> {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
+              backgroundColor: AppColors.backgroundColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0), // 테두리 둥글게 조절
               ),
@@ -113,7 +114,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
                 const SizedBox(height: 20.0),
                 TextFormField(
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: '이메일',
                     focusedBorder: UnderlineInputBorder(
                       borderSide: BorderSide(color: AppColors.primaryColor),
@@ -136,7 +137,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
                 const SizedBox(height: 15.0),
                 TextFormField(
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: '비밀번호',
                     focusedBorder: UnderlineInputBorder(
                       borderSide: BorderSide(color: AppColors.primaryColor),
