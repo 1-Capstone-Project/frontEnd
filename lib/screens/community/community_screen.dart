@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gitmate/const/colors.dart';
-import 'package:gitmate/screens/community/add_post_screen.dart';
-import 'post_detail_screen.dart';
+import 'package:gitmate/screens/community/details/add_post_screen.dart';
+import 'details/post_detail_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});

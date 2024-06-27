@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:gitmate/screens/profile/account_screen.dart';
+import 'package:gitmate/screens/profile/details/account_screen.dart';
 import 'package:gitmate/screens/sign/sign_in_screen.dart';
 
 class SettingScreen extends StatefulWidget {

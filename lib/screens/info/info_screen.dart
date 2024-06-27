@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gitmate/const/colors.dart';
-import 'package:gitmate/screens/info/info_detail_screen.dart';
+import 'package:gitmate/screens/info/details/info_detail_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 

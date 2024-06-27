@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gitmate/const/colors.dart';
-import 'add_event_screen.dart';
-import 'edit_event_screen.dart'; // 추가
-import 'event_detail_screen.dart';
+import 'details/add_event_screen.dart';
+import 'details/edit_event_screen.dart'; // 추가
+import 'details/event_detail_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';

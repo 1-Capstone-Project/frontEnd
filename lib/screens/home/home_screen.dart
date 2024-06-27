@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:gitmate/const/colors.dart';
-import 'package:gitmate/screens/home/home_detail_screen.dart';
-import 'package:gitmate/screens/info/info_detail_screen.dart';
+import 'package:gitmate/screens/home/details/home_detail_screen.dart';
+import 'package:gitmate/screens/info/details/info_detail_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -135,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
         automaticallyImplyLeading: false,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        title: Text(
+        title: const Text(
           "GitMate",
           style: TextStyle(
             color: AppColors.backgroundColor,
@@ -144,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         leadingWidth: 50.0, // 리딩 위젯의 너비를 줄임
         leading: Padding(
-          padding: EdgeInsets.only(left: 8.0), // 원하는 간격으로 설정
+          padding: const EdgeInsets.only(left: 8.0), // 원하는 간격으로 설정
           child: Image.asset(
             'assets/images/logo.png',
             color: AppColors.backgroundColor,
@@ -329,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.black.withOpacity(0.6),
                   spreadRadius: 1,
                   blurRadius: 3,
-                  offset: Offset(3, 5), // changes position of shadow
+                  offset: const Offset(3, 5), // changes position of shadow
                 ),
               ],
               image: company['image_url'] != null
@@ -406,7 +406,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.black.withOpacity(0.6),
                   spreadRadius: 1,
                   blurRadius: 3,
-                  offset: Offset(3, 5), // changes position of shadow
+                  offset: const Offset(3, 5), // changes position of shadow
                 ),
               ],
               image: event['image_urls'].isNotEmpty
@@ -447,7 +447,7 @@ class _HomeScreenState extends State<HomeScreen> {
 class EventDetailScreen extends StatelessWidget {
   final Map<String, dynamic> event;
 
-  const EventDetailScreen({Key? key, required this.event}) : super(key: key);
+  const EventDetailScreen({super.key, required this.event});
 
   @override
   Widget build(BuildContext context) {
@@ -475,7 +475,7 @@ class EventDetailScreen extends StatelessWidget {
                         margin: const EdgeInsets.symmetric(horizontal: 5.0),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10.0),
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
                               color: Colors.black26,
                               spreadRadius: 1,
