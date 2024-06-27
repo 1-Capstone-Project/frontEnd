@@ -6,7 +6,6 @@ import 'package:gitmate/screens/info/info_detail_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
