@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gitmate/const/colors.dart';
 import 'add_event_screen.dart';
+import 'edit_event_screen.dart'; // 추가
 import 'event_detail_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -95,6 +96,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
         'image_urls': imageUrls,
         'user_id': FirebaseAuth.instance.currentUser!.uid,
       });
+    });
+  }
+
+  void _editEvent(String eventId, Map<String, dynamic> updatedEvent) {
+    setState(() {
+      final index = _events.indexWhere((event) => event['id'] == eventId);
+      if (index != -1) {
+        _events[index] = updatedEvent;
+      }
     });
   }
 
@@ -258,6 +268,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           onSelected: (value) {
                             if (value == 'delete') {
                               _deleteEvent(event['id']);
+                            } else if (value == 'edit') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => EditEventScreen(
+                                    event: event,
+                                    onEditEvent: _editEvent,
+                                  ),
+                                ),
+                              );
                             } else if (value == 'report') {
                               // 신고 기능 추가
                               print('Report event: ${event['id']}');
@@ -265,12 +285,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           },
                           itemBuilder: (BuildContext context) {
                             return <PopupMenuEntry<String>>[
-                              if (event['user_id'] == currentUser!.uid)
+                              if (event['user_id'] == currentUser!.uid) ...[
+                                const PopupMenuItem<String>(
+                                  value: 'edit',
+                                  child: Text('수정'),
+                                ),
                                 const PopupMenuItem<String>(
                                   value: 'delete',
                                   child: Text('삭제'),
-                                )
-                              else
+                                ),
+                              ] else
                                 const PopupMenuItem<String>(
                                   value: 'report',
                                   child: Text('신고'),
