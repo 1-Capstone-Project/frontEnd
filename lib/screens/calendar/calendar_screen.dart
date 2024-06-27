@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gitmate/const/colors.dart';
 import 'add_event_screen.dart';
+import 'event_detail_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +16,8 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   List<Map<String, dynamic>> _events = [];
+  bool _isLoading = true;
+  Map<String, Map<String, dynamic>> _userProfiles = {};
 
   @override
   void initState() {
@@ -27,42 +30,63 @@ class _CalendarScreenState extends State<CalendarScreen> {
       final snapshot =
           await FirebaseFirestore.instance.collection('events').get();
 
+      final events = snapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          'date': DateFormat('yyyy-MM-dd').parse(doc['schedule_date']),
+          'title': doc['title'],
+          'content': doc['description'],
+          'start_time': doc['start_time'],
+          'end_time': doc['end_time'],
+          'image_urls': List<String>.from(doc['image_urls']),
+          'user_id': doc['user_id'],
+        };
+      }).toList();
+
       setState(() {
-        _events = snapshot.docs.map((doc) {
-          return {
-            'date': DateFormat('yyyy-MM-dd').parse(doc['schedule_date']),
-            'title': doc['title'],
-            'content': doc['description'],
-            'start_time': doc['start_time'],
-            'end_time': doc['end_time'],
-            'image_urls': List<String>.from(doc['image_urls']),
-            'user_id': doc['user_id'],
-          };
-        }).toList();
+        _events = events;
+        _events.sort((a, b) => b['date'].compareTo(a['date']));
+        _isLoading = false;
       });
+
+      // 사용자 프로필 데이터를 비동기적으로 가져옴
+      for (var event in events) {
+        _fetchUserProfile(event['user_id']);
+      }
     } catch (e) {
       print('Exception: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  Future<Map<String, dynamic>> _fetchUserProfile(String userId) async {
-    final userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    return userDoc.exists
-        ? {
-            'nickname': userDoc['nickname'],
-            'profile_image': userDoc['imageUrl'],
-          }
-        : {
-            'nickname': 'Unknown',
-            'profile_image': null,
-          };
+  Future<void> _fetchUserProfile(String userId) async {
+    if (!_userProfiles.containsKey(userId)) {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      final userProfile = userDoc.exists
+          ? {
+              'nickname': userDoc['nickname'],
+              'profile_image': userDoc['imageUrl'],
+            }
+          : {
+              'nickname': 'Unknown',
+              'profile_image': null,
+            };
+
+      setState(() {
+        _userProfiles[userId] = userProfile;
+      });
+    }
   }
 
   void _addEvent(DateTime date, String title, String content, String startTime,
       String endTime, List<String> imageUrls) {
     setState(() {
-      _events.add({
+      _events.insert(0, {
         'date': date,
         'title': title,
         'content': content,
@@ -74,8 +98,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
+  void _deleteEvent(String eventId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('events')
+          .doc(eventId)
+          .delete();
+      setState(() {
+        _events.removeWhere((event) => event['id'] == eventId);
+      });
+    } catch (e) {
+      print('Failed to delete event: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -120,41 +159,54 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
         ),
       ),
-      body: _events.isEmpty
+      body: _isLoading
           ? Center(
               child: CircularProgressIndicator(
               color: AppColors.primaryColor,
             ))
-          : ListView.builder(
-              itemCount: _events.length,
-              itemBuilder: (context, index) {
-                final event = _events[index];
-                return FutureBuilder<Map<String, dynamic>>(
-                  future: _fetchUserProfile(event['user_id']),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    final userProfile = snapshot.data!;
+          : _events.isEmpty
+              ? Center(
+                  child: Text("아직 일정이 없습니다."),
+                )
+              : ListView.builder(
+                  itemCount: _events.length,
+                  itemBuilder: (context, index) {
+                    final event = _events[index];
+                    final userProfile = _userProfiles[event['user_id']];
+
                     return Card(
-                      margin: EdgeInsets.all(8.0),
+                      color: AppColors.backgroundColor,
+                      margin: const EdgeInsets.all(8.0),
                       child: ListTile(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EventDetailScreen(
+                                event: event,
+                                userProfile: userProfile ?? {},
+                              ),
+                            ),
+                          );
+                        },
                         title: Text(event['title']),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(event['content']),
-                            if (userProfile['profile_image'] != null)
+                            if (userProfile != null &&
+                                userProfile['profile_image'] != null)
                               CircleAvatar(
                                 backgroundImage:
                                     NetworkImage(userProfile['profile_image']),
                                 radius: 20,
                               ),
-                            Text(userProfile['nickname']),
+                            if (userProfile != null)
+                              Text(userProfile['nickname']),
                             if (event['image_urls'] != null)
                               CarouselSlider(
                                 options: CarouselOptions(
-                                  height: 200.0,
+                                  height: 300.0, // 이미지 높이 조정
                                   enableInfiniteScroll: false,
                                   enlargeCenterPage: true,
                                 ),
@@ -165,10 +217,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                       return Container(
                                         width:
                                             MediaQuery.of(context).size.width,
-                                        margin: EdgeInsets.symmetric(
+                                        margin: const EdgeInsets.symmetric(
                                             horizontal: 5.0),
-                                        child: Image.network(imageUrl,
-                                            fit: BoxFit.cover),
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(10.0),
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: Colors.black26,
+                                              spreadRadius: 1,
+                                              blurRadius: 5,
+                                            ),
+                                          ],
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(10.0),
+                                          child: Image.network(imageUrl,
+                                              fit: BoxFit.cover),
+                                        ),
                                       );
                                     },
                                   );
@@ -187,12 +254,34 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             ],
                           ],
                         ),
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'delete') {
+                              _deleteEvent(event['id']);
+                            } else if (value == 'report') {
+                              // 신고 기능 추가
+                              print('Report event: ${event['id']}');
+                            }
+                          },
+                          itemBuilder: (BuildContext context) {
+                            return <PopupMenuEntry<String>>[
+                              if (event['user_id'] == currentUser!.uid)
+                                const PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Text('삭제'),
+                                )
+                              else
+                                const PopupMenuItem<String>(
+                                  value: 'report',
+                                  child: Text('신고'),
+                                ),
+                            ];
+                          },
+                        ),
                       ),
                     );
                   },
-                );
-              },
-            ),
+                ),
     );
   }
 }

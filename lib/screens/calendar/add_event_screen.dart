@@ -109,8 +109,24 @@ class _AddEventScreenState extends State<AddEventScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: AppColors.primaryColor,
         centerTitle: false,
-        title: const Text("일정 추가"),
+        title: const Text(
+          '일정 추가',
+          style: TextStyle(
+            color: AppColors.backgroundColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: AppColors.backgroundColor,
+          ),
+          onPressed: () {
+            Navigator.pop(context); // 로그인 화면으로 이동
+          },
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -123,23 +139,92 @@ class _AddEventScreenState extends State<AddEventScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  color: Colors.grey[200],
+                  height: 200,
+                  child: Center(
+                    child: _selectedImages.isEmpty
+                        ? const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "이미지 선택",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(width: 100, child: Divider()),
+                              Text(
+                                "절대 개인정보가\n포함된 이미지를 넣지마세요",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: AppColors.errorColor,
+                                  fontSize: 12,
+                                ),
+                              )
+                            ],
+                          )
+                        : ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _selectedImages.length,
+                            itemBuilder: (context, index) {
+                              return Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Image.file(_selectedImages[index]),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  hintText: "제목",
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                ),
+                cursorColor: AppColors.primaryColor,
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _contentController,
+                decoration: const InputDecoration(
+                  hintText: "내용",
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                ),
+                cursorColor: AppColors.primaryColor,
+              ),
+              const SizedBox(height: 20),
               TableCalendar(
-                calendarStyle: CalendarStyle(
+                calendarStyle: const CalendarStyle(
                   selectedDecoration: BoxDecoration(
                     color: AppColors.primaryColor,
                   ),
                 ),
-                headerStyle: HeaderStyle(
+                headerStyle: const HeaderStyle(
                   formatButtonTextStyle: TextStyle(
                     color: AppColors.primaryColor,
                   ),
                   leftChevronIcon: Icon(
                     Icons.arrow_back_ios,
-                    color: AppColors.primaryColor,
+                    color: Colors.grey,
                   ),
                   rightChevronIcon: Icon(
                     Icons.arrow_forward_ios,
-                    color: AppColors.primaryColor,
+                    color: Colors.grey,
                   ),
                 ),
                 firstDay: DateTime.utc(2000, 1, 1),
@@ -159,55 +244,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 },
               ),
               const SizedBox(height: 20),
-              TextField(
-                controller: _titleController,
-                decoration: const InputDecoration(hintText: "제목"),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _contentController,
-                decoration: const InputDecoration(hintText: "내용"),
-              ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  color: Colors.grey[200],
-                  height: 150,
-                  child: Center(
-                    child: _selectedImages.isEmpty
-                        ? const Text("이미지 선택")
-                        : ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _selectedImages.length,
-                            itemBuilder: (context, index) {
-                              return Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: Image.file(_selectedImages[index]),
-                              );
-                            },
-                          ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Checkbox(
-                    value: _allDay,
-                    onChanged: (value) {
-                      setState(() {
-                        _allDay = value!;
-                        if (_allDay) {
-                          _startTime = null;
-                          _endTime = null;
-                        }
-                      });
-                    },
-                  ),
-                  const Text("하루종일")
-                ],
-              ),
               if (!_allDay) ...[
                 Row(
                   children: [
@@ -218,6 +254,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
                             : '시작 시간: ${_startTime!.format(context)}'),
                         onTap: () async {
                           final time = await showTimePicker(
+                            helpText: "종료 시간",
+                            cancelText: "취소",
+                            confirmText: "적용",
                             context: context,
                             initialTime: TimeOfDay.now(),
                           );
@@ -236,6 +275,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
                             : '종료 시간: ${_endTime!.format(context)}'),
                         onTap: () async {
                           final time = await showTimePicker(
+                            helpText: "종료 시간",
+                            cancelText: "취소",
+                            confirmText: "적용",
                             context: context,
                             initialTime: TimeOfDay.now(),
                           );
@@ -250,11 +292,32 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   ],
                 ),
               ],
+              Row(
+                children: [
+                  Checkbox(
+                    value: _allDay,
+                    onChanged: (value) {
+                      setState(() {
+                        _allDay = value!;
+                        if (_allDay) {
+                          _startTime = null;
+                          _endTime = null;
+                        }
+                      });
+                    },
+                  ),
+                  const Text("하루종일")
+                ],
+              ),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _submitEvent,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    foregroundColor: AppColors.backgroundColor,
+                  ),
                   child: const Text("일정 만들기"),
                 ),
               ),
@@ -262,6 +325,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 const Center(
                   child: CircularProgressIndicator(),
                 ),
+              const SizedBox(height: 50),
             ],
           ),
         ),

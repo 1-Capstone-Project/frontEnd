@@ -68,15 +68,24 @@ class InfoDetailScreen extends StatelessWidget {
               ),
             ),
             // 회사 정보 버튼 추가
+            SizedBox(
+              height: 300,
+            ),
             Center(
-              child: ElevatedButton(
-                onPressed: () async {
-                  final url = Uri.parse(company['website']);
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url);
-                  }
-                },
-                child: const Text('Visit Website'),
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width / 1.2,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final url = Uri.parse(company['website']);
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      foregroundColor: AppColors.backgroundColor),
+                  child: const Text('정보 보러가기'),
+                ),
               ),
             ),
             // 나머지 회사 정보 표시 (주석을 해제해서 필요 시 사용)

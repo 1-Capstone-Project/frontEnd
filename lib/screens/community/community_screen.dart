@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gitmate/const/colors.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'add_post_screen.dart';
+import 'package:gitmate/screens/community/add_post_screen.dart';
+import 'post_detail_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -12,28 +13,34 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  late Future<List<dynamic>> _posts;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  @override
-  void initState() {
-    super.initState();
-    _posts = _fetchPosts();
-  }
-
-  Future<List<dynamic>> _fetchPosts() async {
-    final response = await http.get(Uri.parse('http://127.0.0.1:8080/posts'));
-    if (response.statusCode == 200) {
-      final List<dynamic> postJson = json.decode(response.body);
-      return postJson;
-    } else {
-      throw Exception('Failed to load posts');
+  Future<Map<String, dynamic>?> _fetchUserProfile(String userId) async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      if (userDoc.exists) {
+        return userDoc.data() as Map<String, dynamic>?;
+      }
+    } catch (e) {
+      print('Failed to fetch user profile: $e');
     }
+    return null;
   }
 
-  Future<void> _refreshPosts() async {
-    setState(() {
-      _posts = _fetchPosts();
-    });
+  Future<void> _deletePost(String postId) async {
+    try {
+      await FirebaseFirestore.instance.collection('posts').doc(postId).delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post deleted successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete post: $e')),
+      );
+    }
   }
 
   @override
@@ -51,14 +58,102 @@ class _CommunityScreenState extends State<CommunityScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        leadingWidth: 50.0,
+        leadingWidth: 50.0, // 리딩 위젯의 너비를 줄임
         leading: Padding(
-          padding: const EdgeInsets.only(left: 8.0),
+          padding: const EdgeInsets.only(left: 8.0), // 원하는 간격으로 설정
           child: Image.asset(
             'assets/images/logo.png',
             color: AppColors.backgroundColor,
           ),
         ),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('posts').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('아직 게시물이 없습니다.'));
+          }
+
+          return ListView.builder(
+            itemCount: snapshot.data!.docs.length,
+            itemBuilder: (context, index) {
+              final doc = snapshot.data!.docs[index];
+              final post = doc.data() as Map<String, dynamic>;
+
+              return FutureBuilder<Map<String, dynamic>?>(
+                future: _fetchUserProfile(post['user_id']),
+                builder: (context, userSnapshot) {
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final userProfile = userSnapshot.data;
+                  final isCurrentUser =
+                      _auth.currentUser!.uid == post['user_id'];
+
+                  return Card(
+                    color: AppColors.backgroundColor,
+                    margin: const EdgeInsets.all(8.0),
+                    child: ListTile(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                PostDetailScreen(postId: doc.id),
+                          ),
+                        );
+                      },
+                      leading: userProfile != null
+                          ? CircleAvatar(
+                              backgroundImage:
+                                  NetworkImage(userProfile['imageUrl'] ?? ''),
+                            )
+                          : const CircleAvatar(
+                              child: Icon(Icons.person),
+                            ),
+                      title: Text(post['title'] ?? 'No title'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(post['description'] ?? 'No description'),
+                          if (userProfile != null)
+                            Text(userProfile['nickname'] ?? 'Unknown'),
+                          if (post['image_urls'] != null &&
+                              post['image_urls'].isNotEmpty)
+                            SizedBox(
+                              height: 100,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: post['image_urls'].length,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: Image.network(
+                                        post['image_urls'][index]),
+                                  );
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                      trailing: isCurrentUser
+                          ? IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () {
+                                _deletePost(doc.id);
+                              },
+                            )
+                          : null,
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.all(10.0),
@@ -66,71 +161,21 @@ class _CommunityScreenState extends State<CommunityScreen> {
           width: 60,
           height: 60,
           child: FloatingActionButton(
-            onPressed: () async {
-              final result = await Navigator.push(
+            onPressed: () {
+              Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const AddPostScreen(),
+                  builder: ((context) => const AddPostScreen()),
                 ),
               );
-              if (result == true) {
-                _refreshPosts();
-              }
             },
             backgroundColor: AppColors.primaryColor,
             foregroundColor: AppColors.backgroundColor,
             shape: const CircleBorder(),
             elevation: 10,
-            child: const Icon(Icons.edit),
+            child: Icon(Icons.edit),
           ),
         ),
-      ),
-      body: FutureBuilder<List<dynamic>>(
-        future: _posts,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Failed to load posts'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No posts available'));
-          } else {
-            final posts = snapshot.data!;
-            return RefreshIndicator(
-              onRefresh: _refreshPosts,
-              child: ListView.builder(
-                itemCount: posts.length,
-                itemBuilder: (context, index) {
-                  final post = posts[index];
-                  return Card(
-                    margin: const EdgeInsets.all(10.0),
-                    child: ListTile(
-                      title: Text(post['title']),
-                      subtitle: Text(post['description']),
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text(post['title']),
-                            content: Text(post['description']),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                child: const Text('Close'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            );
-          }
-        },
       ),
     );
   }
