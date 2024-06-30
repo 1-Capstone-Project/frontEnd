@@ -24,14 +24,6 @@ class _HomeScreenState extends State<HomeScreen> {
     'assets/event/image5.jpeg',
   ];
 
-  final List<String> imagePaths = [
-    'assets/example/image1.jpeg',
-    'assets/example/image2.jpeg',
-    'assets/example/image3.jpeg',
-    'assets/example/image4.jpeg',
-    'assets/example/image5.jpeg',
-  ];
-
   int _currentIndex = 0;
   List<dynamic> _companyInfo = [];
   bool _isLoading = true;
@@ -52,8 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final response = await http
-          .get(Uri.parse('http://127.0.0.1:8080/company_info?page=1&limit=10'));
+      final response = await http.get(Uri.parse(
+          'http://gitmate-backend.com:8080/company_info?page=1&limit=10'));
 
       if (response.statusCode == 200) {
         final List<dynamic> fetchedData = json.decode(response.body);
@@ -113,178 +105,135 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<Map<String, dynamic>> _fetchUserProfile(String userId) async {
-    final userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    return userDoc.exists
-        ? {
-            'nickname': userDoc['nickname'],
-            'profile_image': userDoc['imageUrl'],
-          }
-        : {
-            'nickname': 'Unknown',
-            'profile_image': null,
-          };
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         backgroundColor: AppColors.primaryColor,
         automaticallyImplyLeading: false,
-        scrolledUnderElevation: 0,
+        elevation: 0,
         centerTitle: false,
         title: const Text(
           "GitMate",
           style: TextStyle(
-            color: AppColors.backgroundColor,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
-        leadingWidth: 50.0, // 리딩 위젯의 너비를 줄임
         leading: Padding(
-          padding: const EdgeInsets.only(left: 8.0), // 원하는 간격으로 설정
+          padding: const EdgeInsets.only(left: 16.0),
           child: Image.asset(
             'assets/images/logo.png',
-            color: AppColors.backgroundColor,
+            color: Colors.white,
           ),
         ),
         actions: [
           IconButton(
             onPressed: () {},
-            icon: const Icon(
-              Icons.notifications,
-              color: AppColors.backgroundColor,
-            ),
+            icon: const Icon(Icons.notifications, color: Colors.white),
           ),
         ],
       ),
       body: ListView(
         children: [
           _buildImageSlider(),
-          _buildEventSection("채용중인 기업"),
-          _buildRecentEventsSection("최근 일정"),
+          _buildSection("채용중인 기업", _buildEventContainers()),
+          _buildSection("최근 일정", _buildRecentEventContainers()),
         ],
       ),
     );
   }
 
   Widget _buildImageSlider() {
-    return Stack(
-      children: [
-        CarouselSlider(
-          options: CarouselOptions(
-            // height: MediaQuery.of(context).size.height / 2.5,
-            viewportFraction: 1.0,
-            autoPlay: true,
-            onPageChanged: (index, reason) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-          ),
-          items: sliderImagePaths.map((path) {
-            return Builder(
-              builder: (BuildContext context) {
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DetailScreen(
-                          imagePath: path,
-                          title: 'Slider Image',
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Stack(
+        children: [
+          CarouselSlider(
+            options: CarouselOptions(
+              viewportFraction: 1.0,
+              autoPlay: true,
+              onPageChanged: (index, reason) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+            ),
+            items: sliderImagePaths.map((path) {
+              return Builder(
+                builder: (BuildContext context) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DetailScreen(
+                            imagePath: path,
+                            title: 'Slider Image',
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage(path),
+                          fit: BoxFit.cover,
                         ),
                       ),
-                    );
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage(path),
-                        fit: BoxFit.fill,
-                      ),
                     ),
-                  ),
-                );
-              },
-            );
-          }).toList(),
-        ),
-        Positioned(
-          bottom: 10.0,
-          left: 0.0,
-          right: 0.0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: sliderImagePaths.asMap().entries.map((entry) {
-              return GestureDetector(
-                onTap: () => setState(() => _currentIndex = entry.key),
-                child: Container(
-                  width: 8.0,
-                  height: 8.0,
-                  margin: const EdgeInsets.symmetric(
-                      vertical: 8.0, horizontal: 4.0),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.grey)
-                        .withOpacity(_currentIndex == entry.key ? 0.9 : 0.4),
-                  ),
-                ),
+                  );
+                },
               );
             }).toList(),
           ),
-        ),
-      ],
+          Positioned(
+            bottom: 10.0,
+            left: 0.0,
+            right: 0.0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: sliderImagePaths.asMap().entries.map((entry) {
+                return Container(
+                  width: 8.0,
+                  height: 8.0,
+                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _currentIndex == entry.key
+                        ? AppColors.primaryColor
+                        : Colors.white.withOpacity(0.4),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildEventSection(String title) {
+  Widget _buildSection(String title, List<Widget> content) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: _buildEventContainers(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecentEventsSection(String title) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: _buildRecentEventContainers(),
-            ),
-          ),
+          child: Row(children: content),
         ),
       ],
     );
@@ -292,75 +241,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> _buildEventContainers() {
     if (_isLoading) {
-      return [
-        const Center(
-            child: CircularProgressIndicator(
-          color: Colors.transparent,
-        )),
-      ];
+      return [const Center(child: CircularProgressIndicator())];
     } else if (_errorMessage.isNotEmpty) {
-      return [
-        Center(
-          child: Text(_errorMessage),
-        ),
-      ];
+      return [Center(child: Text(_errorMessage))];
     } else {
       return _companyInfo.map((company) {
-        return GestureDetector(
+        return _buildEventItem(
+          title: company['company_name'],
+          imageUrl: company['image_url'],
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => InfoDetailScreen(
-                  company: company,
-                ),
+                builder: (context) => InfoDetailScreen(company: company),
               ),
             );
           },
-          child: Container(
-            width: 150,
-            height: 180,
-            margin: const EdgeInsets.symmetric(horizontal: 8.0),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundColor,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.6),
-                  spreadRadius: 1,
-                  blurRadius: 3,
-                  offset: const Offset(3, 5), // changes position of shadow
-                ),
-              ],
-              image: company['image_url'] != null
-                  ? DecorationImage(
-                      image: NetworkImage(company['image_url']),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 5.0),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    company['company_name'],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
         );
       }).toList();
     }
@@ -368,24 +264,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> _buildRecentEventContainers() {
     if (_isEventsLoading) {
-      return [
-        const Center(
-            child: CircularProgressIndicator(
-          color: Colors.transparent,
-        )),
-      ];
+      return [const Center(child: CircularProgressIndicator())];
     } else if (_events.isEmpty) {
-      return [
-        const Padding(
-          padding: EdgeInsets.only(left: 15),
-          child: Center(
-            child: Text('최근 일정이 아직 없습니다.'),
-          ),
-        ),
-      ];
+      return [const Center(child: Text('최근 일정이 아직 없습니다.'))];
     } else {
       return _events.take(10).map((event) {
-        return GestureDetector(
+        return _buildEventItem(
+          title: event['title'],
+          imageUrl:
+              event['image_urls'].isNotEmpty ? event['image_urls'][0] : null,
           onTap: () {
             Navigator.push(
               context,
@@ -394,53 +281,66 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           },
-          child: Container(
-            width: 150,
-            height: 180,
-            margin: const EdgeInsets.symmetric(horizontal: 8.0),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundColor,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.6),
-                  spreadRadius: 1,
-                  blurRadius: 3,
-                  offset: const Offset(3, 5), // changes position of shadow
-                ),
-              ],
-              image: event['image_urls'].isNotEmpty
-                  ? DecorationImage(
-                      image: NetworkImage(event['image_urls'][0]),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 5.0),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    event['title'],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
         );
       }).toList();
     }
+  }
+
+  Widget _buildEventItem(
+      {required String title, String? imageUrl, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 150,
+        height: 200,
+        margin: const EdgeInsets.only(left: 16.0, bottom: 16.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
+              child: imageUrl != null
+                  ? Image.network(
+                      imageUrl,
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(
+                      height: 120,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.image, color: Colors.grey),
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -455,56 +355,49 @@ class EventDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(event['title']),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (event['image_urls'] != null && event['image_urls'].isNotEmpty)
               CarouselSlider(
                 options: CarouselOptions(
-                  height: 400.0,
-                  enableInfiniteScroll: false,
-                  enlargeCenterPage: true,
+                  height: 300.0,
+                  viewportFraction: 1.0,
+                  enlargeCenterPage: false,
                 ),
                 items: event['image_urls'].map<Widget>((imageUrl) {
-                  return Builder(
-                    builder: (BuildContext context) {
-                      return Container(
-                        width: MediaQuery.of(context).size.width,
-                        margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              spreadRadius: 1,
-                              blurRadius: 5,
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10.0),
-                          child: Image.network(imageUrl, fit: BoxFit.cover),
-                        ),
-                      );
-                    },
-                  );
+                  return Image.network(imageUrl,
+                      fit: BoxFit.cover, width: double.infinity);
                 }).toList(),
               ),
-            const SizedBox(height: 16),
-            Text(
-              event['content'],
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              "시작 시간: ${event['start_time']}",
-              style: const TextStyle(fontSize: 16),
-            ),
-            Text(
-              "종료 시간: ${event['end_time']}",
-              style: const TextStyle(fontSize: 16),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event['title'],
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "일정: ${DateFormat('yyyy년 MM월 dd일').format(event['date'])}",
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "시간: ${event['start_time']} - ${event['end_time']}",
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    event['content'],
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

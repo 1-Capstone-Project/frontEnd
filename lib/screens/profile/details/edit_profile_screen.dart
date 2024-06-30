@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gitmate/const/colors.dart';
-import 'package:image/image.dart' as img; // 이미지 압축을 위한 패키지 추가
+import 'package:image/image.dart' as img;
 
 class EditProfileScreen extends StatefulWidget {
   final String? currentImageUrl;
@@ -103,7 +103,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       try {
         String? downloadUrl = widget.currentImageUrl;
         if (_newProfileImage != null) {
-          // Firebase Storage에 이미지 업로드
           String fileName = 'profile_images/${_user!.uid}.jpg';
           try {
             File compressedImage = await _compressImage(_newProfileImage!);
@@ -125,33 +124,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           }
         }
 
-        // Firestore에 사용자 정보 업데이트
-        try {
-          await _firestore.collection('users').doc(_user!.uid).update({
-            'imageUrl': downloadUrl,
-            'nickname': _nickname,
-            'bio': _bio,
-            'lastNicknameChange': now,
-          });
-        } catch (e) {
-          print('Firestore error: $e');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('사용자 정보를 업데이트하는 중 오류가 발생했습니다.'),
-              backgroundColor: AppColors.errorColor,
-            ),
-          );
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
+        await _firestore.collection('users').doc(_user!.uid).update({
+          'imageUrl': downloadUrl,
+          'nickname': _nickname,
+          'bio': _bio,
+          'lastNicknameChange': now,
+        });
 
         setState(() {
           _isLoading = false;
         });
 
-        // 업데이트 완료 후 이전 화면으로 복귀
         Navigator.pop(context, true);
       } catch (e) {
         print('General error: $e');
@@ -171,8 +154,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        centerTitle: false,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        centerTitle: true,
         title: const Text(
           '프로필 편집',
           style: TextStyle(
@@ -181,116 +167,142 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios,
-            color: AppColors.primaryColor,
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryColor),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Center(
+      body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
-            child: Stack(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: CircleAvatar(
-                        backgroundColor: AppColors.primaryColor,
-                        radius: 50,
-                        backgroundImage: _newProfileImage != null
-                            ? FileImage(_newProfileImage!)
-                            : (widget.currentImageUrl != null
-                                ? NetworkImage(widget.currentImageUrl!)
-                                : const AssetImage(
-                                    'assets/images/logo.png')) as ImageProvider,
-                        child: _newProfileImage == null &&
-                                widget.currentImageUrl == null
-                            ? const Icon(Icons.camera_alt,
-                                size: 50, color: Colors.grey)
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(height: 30.0),
-                    const Row(
+                Center(
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: Stack(
                       children: [
-                        Text('닉네임'),
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.grey[200],
+                          backgroundImage: _newProfileImage != null
+                              ? FileImage(_newProfileImage!)
+                              : (widget.currentImageUrl != null
+                                  ? NetworkImage(widget.currentImageUrl!)
+                                  : null) as ImageProvider?,
+                          child: _newProfileImage == null &&
+                                  widget.currentImageUrl == null
+                              ? const Icon(Icons.person,
+                                  size: 60, color: Colors.grey)
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.edit,
+                                color: Colors.white, size: 20),
+                          ),
+                        ),
                       ],
                     ),
-                    TextFormField(
-                      initialValue: _nickname,
-                      decoration: const InputDecoration(
-                        hintText: '닉네임',
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.primaryColor),
-                        ),
-                      ),
-                      cursorColor: AppColors.primaryColor,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return '닉네임을 입력해주세요.';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) {
-                        _nickname = value ?? '';
-                      },
-                    ),
-                    const SizedBox(height: 30.0),
-                    const Row(
-                      children: [
-                        Text('자기소개'),
-                      ],
-                    ),
-                    TextFormField(
-                      initialValue: _bio,
-                      decoration: const InputDecoration(
-                        hintText: '자기소개',
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.primaryColor),
-                        ),
-                      ),
-                      cursorColor: AppColors.primaryColor,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return '자기소개를 입력해주세요.';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) {
-                        _bio = value ?? '';
-                      },
-                    ),
-                    const SizedBox(height: 15.0),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _saveProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('프로필 저장'),
-                      ),
-                    ),
-                  ],
-                ),
-                if (_isLoading)
-                  const Center(
-                    child: CircularProgressIndicator(),
                   ),
+                ),
+                const SizedBox(height: 32),
+                _buildTextField(
+                  label: '닉네임',
+                  initialValue: _nickname,
+                  onSaved: (value) => _nickname = value ?? '',
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  label: '자기소개',
+                  initialValue: _bio,
+                  onSaved: (value) => _bio = value ?? '',
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text('프로필 저장', style: TextStyle(fontSize: 16)),
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required String initialValue,
+    required Function(String?) onSaved,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[700],
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          initialValue: initialValue,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
+            ),
+          ),
+          cursorColor: AppColors.primaryColor,
+          maxLines: maxLines,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return '$label을(를) 입력해주세요.';
+            }
+            return null;
+          },
+          onSaved: onSaved,
+        ),
+      ],
     );
   }
 }

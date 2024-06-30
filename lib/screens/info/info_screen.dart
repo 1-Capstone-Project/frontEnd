@@ -36,7 +36,7 @@ class _InfoScreenState extends State<InfoScreen> {
 
     try {
       final response = await http.get(Uri.parse(
-          'http://127.0.0.1:8080/company_info?page=$_currentPage&limit=20'));
+          'http://gitmate-backend.com:8080/company_info?page=$_currentPage&limit=20'));
 
       if (response.statusCode == 200) {
         final List<dynamic> fetchedData = json.decode(response.body);
@@ -87,32 +87,31 @@ class _InfoScreenState extends State<InfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         automaticallyImplyLeading: false,
         centerTitle: false,
-        scrolledUnderElevation: 0,
+        elevation: 0,
         backgroundColor: AppColors.primaryColor,
         title: const Text(
           "취업",
           style: TextStyle(
-            color: AppColors.backgroundColor,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
-        leadingWidth: 50.0, // 리딩 위젯의 너비를 줄임
+        leadingWidth: 50.0,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 8.0), // 원하는 간격으로 설정
+          padding: const EdgeInsets.only(left: 16.0),
           child: Image.asset(
             'assets/images/logo.png',
-            color: AppColors.backgroundColor,
+            color: Colors.white,
           ),
         ),
       ),
       body: _isLoading && _companyInfo.isEmpty
           ? const Center(
-              child: CircularProgressIndicator(
-              color: AppColors.primaryColor,
-            ))
+              child: CircularProgressIndicator(color: AppColors.primaryColor))
           : _errorMessage.isNotEmpty
               ? Center(child: Text(_errorMessage))
               : Column(
@@ -128,13 +127,14 @@ class _InfoScreenState extends State<InfoScreen> {
                             borderSide: BorderSide.none,
                           ),
                           filled: true,
-                          fillColor: Colors.grey[200],
-                          prefixIcon: const Icon(Icons.search),
+                          fillColor: Colors.white,
+                          prefixIcon: const Icon(Icons.search,
+                              color: AppColors.primaryColor),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 12.0),
                         ),
+                        cursorColor: AppColors.primaryColor,
                       ),
-                    ),
-                    const Divider(
-                      color: Colors.blue,
                     ),
                     Expanded(
                       child: NotificationListener<ScrollNotification>(
@@ -147,109 +147,93 @@ class _InfoScreenState extends State<InfoScreen> {
                           }
                           return false;
                         },
-                        child: Scrollbar(
-                          thumbVisibility: true,
-                          child: ListView.builder(
-                            itemCount: _filteredCompanyInfo.length,
-                            itemBuilder: (context, index) {
-                              final company = _filteredCompanyInfo[index];
-                              return GestureDetector(
+                        child: ListView.builder(
+                          itemCount: _filteredCompanyInfo.length,
+                          itemBuilder: (context, index) {
+                            final company = _filteredCompanyInfo[index];
+                            return Card(
+                              color: AppColors.backgroundColor,
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16.0, vertical: 8.0),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.0)),
+                              child: InkWell(
                                 onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => InfoDetailScreen(
-                                        company: company,
-                                      ),
+                                      builder: (context) =>
+                                          InfoDetailScreen(company: company),
                                     ),
                                   );
                                 },
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.all(8.0),
-                                  title: Text(
-                                    company['company_name'],
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  subtitle: Stack(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Row(
-                                        children: [
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              const SizedBox(height: 8.0),
-                                              Text(
-                                                  '${company['headquarters_location']}'),
-                                              Text('${company['industry']}'),
-                                            ],
-                                          ),
-                                        ],
+                                      ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(8.0),
+                                        child: Image.network(
+                                          company['image_url'],
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
-                                      Column(
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.end,
-                                            children: [
-                                              Container(
-                                                width: 80,
-                                                height: 30,
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                      width: 0.5,
-                                                      color: AppColors
-                                                          .primaryColor),
-                                                ),
-                                                child: Image.network(
-                                                  company['image_url'],
-                                                  fit: BoxFit.cover,
-                                                ),
+                                      const SizedBox(width: 16.0),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              company['company_name'],
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
                                               ),
-                                            ],
-                                          ),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.end,
-                                            children: [
-                                              Container(
-                                                width: 80,
-                                                height: 20,
-                                                color: AppColors.primaryColor,
-                                                child: const Center(
-                                                  child: Text(
-                                                    '채용중',
-                                                    style: TextStyle(
-                                                      color: AppColors
-                                                          .backgroundColor,
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.fromLTRB(
-                                                20, 0, 20, 0),
-                                            child: Divider(
-                                              color: Colors.grey,
-                                              thickness: 0.1,
                                             ),
+                                            const SizedBox(height: 4.0),
+                                            Text(
+                                              company['headquarters_location'],
+                                              style: TextStyle(
+                                                  color: Colors.grey[600]),
+                                            ),
+                                            const SizedBox(height: 4.0),
+                                            Text(
+                                              company['industry'],
+                                              style: TextStyle(
+                                                  color: Colors.grey[600]),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8.0, vertical: 4.0),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryColor,
+                                          borderRadius:
+                                              BorderRadius.circular(4.0),
+                                        ),
+                                        child: const Text(
+                                          '채용중',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                        ],
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              );
-                            },
-                          ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),

@@ -18,6 +18,8 @@ class _AccountScreenState extends State<AccountScreen> {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   User? _user;
   TextEditingController _passwordController = TextEditingController();
+  TextEditingController _newPasswordController = TextEditingController();
+  TextEditingController _confirmNewPasswordController = TextEditingController();
 
   @override
   void initState() {
@@ -25,17 +27,34 @@ class _AccountScreenState extends State<AccountScreen> {
     _user = _auth.currentUser;
   }
 
+  Future<void> _deleteUserPostsAndEvents() async {
+    QuerySnapshot postsSnapshot = await _firestore
+        .collection('posts')
+        .where('user_id', isEqualTo: _user!.uid)
+        .get();
+    for (DocumentSnapshot doc in postsSnapshot.docs) {
+      await doc.reference.delete();
+    }
+
+    QuerySnapshot eventsSnapshot = await _firestore
+        .collection('events')
+        .where('user_id', isEqualTo: _user!.uid)
+        .get();
+    for (DocumentSnapshot doc in eventsSnapshot.docs) {
+      await doc.reference.delete();
+    }
+  }
+
   Future<void> _deleteAccount() async {
     if (_user != null) {
       try {
-        // Firestore 프로필 문서 삭제
         await _firestore.collection('users').doc(_user!.uid).delete();
 
-        // Firebase Storage의 프로필 사진 삭제
         String fileName = 'profile_images/${_user!.uid}.jpg';
         await _storage.ref(fileName).delete();
 
-        // Firebase Auth 계정 삭제
+        await _deleteUserPostsAndEvents();
+
         await _user!.delete();
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -45,7 +64,6 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
         );
 
-        // 로그인 화면으로 이동
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => SignInScreen()),
@@ -77,7 +95,6 @@ class _AccountScreenState extends State<AccountScreen> {
         password: _passwordController.text,
       );
       await _user!.reauthenticateWithCredential(credential);
-      // Reauthenticate and then delete account
       await _deleteAccount();
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,7 +113,7 @@ class _AccountScreenState extends State<AccountScreen> {
         return AlertDialog(
           backgroundColor: AppColors.backgroundColor,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.0), // 테두리 둥글게 조절
+            borderRadius: BorderRadius.circular(10.0),
           ),
           title: const Text(
             '재인증 필요',
@@ -157,7 +174,7 @@ class _AccountScreenState extends State<AccountScreen> {
         return AlertDialog(
           backgroundColor: AppColors.backgroundColor,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.0), // 테두리 둥글게 조절
+            borderRadius: BorderRadius.circular(10.0),
           ),
           title: const Text(
             '[계정 삭제]',
@@ -195,6 +212,147 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  void _showPasswordResetDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.backgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          title: const Text(
+            '비밀번호 재설정',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryColor,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '비밀번호는 하루에 한 번만 변경할 수 있습니다.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                  hintText: '현재 비밀번호',
+                ),
+                cursorColor: AppColors.primaryColor,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _newPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                  hintText: '새 비밀번호',
+                ),
+                cursorColor: AppColors.primaryColor,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _confirmNewPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                  hintText: '새 비밀번호 확인',
+                ),
+                cursorColor: AppColors.primaryColor,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                '취소',
+                style: TextStyle(
+                  color: AppColors.errorColor,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _resetPassword();
+              },
+              child: const Text(
+                '확인',
+                style: TextStyle(
+                  color: AppColors.primaryColor,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _resetPassword() async {
+    if (_newPasswordController.text != _confirmNewPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.errorColor,
+          content: Text('새 비밀번호가 일치하지 않습니다.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      AuthCredential credential = EmailAuthProvider.credential(
+        email: _user!.email!,
+        password: _passwordController.text,
+      );
+      await _user!.reauthenticateWithCredential(credential);
+
+      await _user!.updatePassword(_newPasswordController.text);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.primaryColor,
+          content: Text('비밀번호가 성공적으로 변경되었습니다.'),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = '비밀번호 변경 중 오류가 발생했습니다.';
+      if (e.code == 'wrong-password') {
+        errorMessage = '현재 비밀번호가 올바르지 않습니다.';
+      } else if (e.code == 'weak-password') {
+        errorMessage = '새 비밀번호가 너무 약합니다. 더 강력한 비밀번호를 사용해주세요.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.errorColor,
+          content: Text(errorMessage),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.errorColor,
+          content: Text('비밀번호 변경 중 오류가 발생했습니다.'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -209,6 +367,11 @@ class _AccountScreenState extends State<AccountScreen> {
             subtitle: Text(
               _user?.email ?? '로그인 정보가 없습니다.',
             ),
+          ),
+          ListTile(
+            title: const Text("비밀번호 재설정"),
+            subtitle: const Text("비밀번호는 하루에 한 번만 변경할 수 있습니다."),
+            onTap: _showPasswordResetDialog,
           ),
           const Spacer(),
           Padding(

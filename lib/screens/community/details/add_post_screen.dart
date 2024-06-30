@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:gitmate/const/colors.dart';
 
 class AddPostScreen extends StatefulWidget {
   const AddPostScreen({super.key});
@@ -14,8 +15,8 @@ class AddPostScreen extends StatefulWidget {
 
 class _AddPostScreenState extends State<AddPostScreen> {
   final _formKey = GlobalKey<FormState>();
-  String title = '';
-  String description = '';
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   List<File> _images = [];
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -47,7 +48,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
   Future<void> _addPost() async {
     if (_formKey.currentState?.validate() ?? false) {
-      _formKey.currentState?.save();
       setState(() {
         _isLoading = true;
       });
@@ -55,8 +55,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
         List<String> imageUrls = await _uploadImages(_images);
 
         await _firestore.collection('posts').add({
-          'title': title,
-          'description': description,
+          'title': _titleController.text,
+          'description': _descriptionController.text,
           'image_urls': imageUrls,
           'user_id': _auth.currentUser!.uid,
           'timestamp': FieldValue.serverTimestamp(),
@@ -79,75 +79,110 @@ class _AddPostScreenState extends State<AddPostScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Post'),
+        backgroundColor: AppColors.primaryColor,
+        elevation: 0,
+        title: const Text('게시물 추가', style: TextStyle(color: Colors.white)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      decoration: const InputDecoration(
-                        labelText: 'Title',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a title';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) {
-                        title = value ?? '';
-                      },
-                    ),
-                    const SizedBox(height: 16.0),
-                    TextFormField(
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
-                      ),
-                      maxLines: 5,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a description';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) {
-                        description = value ?? '';
-                      },
-                    ),
-                    const SizedBox(height: 16.0),
-                    ElevatedButton(
-                      onPressed: _pickImage,
-                      child: const Text('Pick Images'),
-                    ),
-                    const SizedBox(height: 16.0),
-                    _images.isNotEmpty
-                        ? Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: _images.map((image) {
-                              return Image.file(
-                                image,
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                              );
-                            }).toList(),
-                          )
-                        : const Text('No images selected'),
-                    const SizedBox(height: 16.0),
-                    ElevatedButton(
-                      onPressed: _addPost,
-                      child: const Text('Add Post'),
-                    ),
-                  ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildImagePicker(),
+              const SizedBox(height: 24),
+              _buildTextField(_titleController, "제목"),
+              const SizedBox(height: 16),
+              _buildTextField(_descriptionController, "내용", maxLines: 5),
+              const SizedBox(height: 16),
+              _buildSubmitButton(),
+              if (_isLoading)
+                const Center(
+                  child:
+                      CircularProgressIndicator(color: AppColors.primaryColor),
                 ),
-              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String hint,
+      {int maxLines = 1}) {
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        hintText: hint,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.primaryColor),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return '$hint을(를) 입력해주세요';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildImagePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: ElevatedButton.icon(
+            onPressed: _pickImage,
+            icon: const Icon(Icons.add_photo_alternate),
+            label: const Text("이미지 추가"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              foregroundColor: Colors.white,
             ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (_images.isNotEmpty)
+          SizedBox(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _images.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Image.file(_images[index],
+                      height: 100, width: 100, fit: BoxFit.cover),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _addPost,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: const Text("게시물 올리기", style: TextStyle(fontSize: 16)),
+      ),
     );
   }
 }

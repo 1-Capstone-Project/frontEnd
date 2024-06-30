@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gitmate/const/colors.dart';
 import 'details/add_event_screen.dart';
-import 'details/edit_event_screen.dart'; // 추가
 import 'details/event_detail_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -17,13 +16,17 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   List<Map<String, dynamic>> _events = [];
+  List<Map<String, dynamic>> _filteredEvents = [];
   bool _isLoading = true;
   Map<String, Map<String, dynamic>> _userProfiles = {};
+  TextEditingController _searchController = TextEditingController();
+  final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
   @override
   void initState() {
     super.initState();
     _fetchEvents();
+    _searchController.addListener(_filterEvents);
   }
 
   Future<void> _fetchEvents() async {
@@ -46,11 +49,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
       setState(() {
         _events = events;
+        _filteredEvents = events;
         _events.sort((a, b) => b['date'].compareTo(a['date']));
         _isLoading = false;
       });
 
-      // 사용자 프로필 데이터를 비동기적으로 가져옴
       for (var event in events) {
         _fetchUserProfile(event['user_id']);
       }
@@ -60,6 +63,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _filterEvents() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredEvents = _events.where((event) {
+        final title = event['title'].toString().toLowerCase();
+        return title.contains(query);
+      }).toList();
+    });
   }
 
   Future<void> _fetchUserProfile(String userId) async {
@@ -96,19 +109,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
         'image_urls': imageUrls,
         'user_id': FirebaseAuth.instance.currentUser!.uid,
       });
+      _filterEvents();
     });
   }
 
-  void _editEvent(String eventId, Map<String, dynamic> updatedEvent) {
-    setState(() {
-      final index = _events.indexWhere((event) => event['id'] == eventId);
-      if (index != -1) {
-        _events[index] = updatedEvent;
-      }
-    });
-  }
-
-  void _deleteEvent(String eventId) async {
+  Future<void> _deleteEvent(String eventId) async {
     try {
       await FirebaseFirestore.instance
           .collection('events')
@@ -116,196 +121,249 @@ class _CalendarScreenState extends State<CalendarScreen> {
           .delete();
       setState(() {
         _events.removeWhere((event) => event['id'] == eventId);
+        _filteredEvents.removeWhere((event) => event['id'] == eventId);
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('일정이 삭제되었습니다.')),
+      );
     } catch (e) {
       print('Failed to delete event: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('일정 삭제에 실패했습니다.')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         automaticallyImplyLeading: false,
         centerTitle: false,
-        scrolledUnderElevation: 0,
+        elevation: 0,
         backgroundColor: AppColors.primaryColor,
         title: const Text(
           "일정",
           style: TextStyle(
-            color: AppColors.backgroundColor,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
-        leadingWidth: 50.0, // 리딩 위젯의 너비를 줄임
+        leadingWidth: 50.0,
         leading: Padding(
-          padding: EdgeInsets.only(left: 8.0), // 원하는 간격으로 설정
+          padding: EdgeInsets.only(left: 16.0),
           child: Image.asset(
             'assets/images/logo.png',
-            color: AppColors.backgroundColor,
+            color: Colors.white,
           ),
         ),
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: SizedBox(
-          width: 60,
-          height: 60,
-          child: FloatingActionButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddEventScreen(onAddEvent: _addEvent),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddEventScreen(onAddEvent: _addEvent),
+            ),
+          );
+        },
+        backgroundColor: AppColors.primaryColor,
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: '일정 제목 검색',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
-              );
-            },
-            backgroundColor: AppColors.primaryColor,
-            foregroundColor: AppColors.backgroundColor,
-            shape: CircleBorder(),
-            elevation: 10,
-            child: Icon(Icons.calendar_month),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
           ),
-        ),
-      ),
-      body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-              color: AppColors.primaryColor,
-            ))
-          : _events.isEmpty
-              ? Center(
-                  child: Text("아직 일정이 없습니다."),
-                )
-              : ListView.builder(
-                  itemCount: _events.length,
-                  itemBuilder: (context, index) {
-                    final event = _events[index];
-                    final userProfile = _userProfiles[event['user_id']];
+          Expanded(
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        color: AppColors.primaryColor))
+                : _filteredEvents.isEmpty
+                    ? const Center(child: Text("일정이 없습니다."))
+                    : ListView.builder(
+                        itemCount: _filteredEvents.length,
+                        itemBuilder: (context, index) {
+                          final event = _filteredEvents[index];
+                          final userProfile = _userProfiles[event['user_id']];
 
-                    return Card(
-                      color: AppColors.backgroundColor,
-                      margin: const EdgeInsets.all(8.0),
-                      child: ListTile(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => EventDetailScreen(
-                                event: event,
-                                userProfile: userProfile ?? {},
+                          return Card(
+                            color: AppColors.backgroundColor,
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EventDetailScreen(
+                                      event: event,
+                                      userProfile: userProfile ?? {},
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (event['image_urls'] != null &&
+                                      event['image_urls'].isNotEmpty)
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(12)),
+                                      child: CarouselSlider.builder(
+                                        itemCount: event['image_urls'].length,
+                                        itemBuilder:
+                                            (context, index, realIndex) {
+                                          return Stack(
+                                            alignment: Alignment.bottomRight,
+                                            children: [
+                                              Image.network(
+                                                event['image_urls'][index],
+                                                fit: BoxFit.cover,
+                                                width: double.infinity,
+                                              ),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.all(8.0),
+                                                child: Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black
+                                                        .withOpacity(0.7),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                  ),
+                                                  child: Text(
+                                                    '${index + 1}/${event['image_urls'].length}',
+                                                    style: TextStyle(
+                                                        color: Colors.white),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                        options: CarouselOptions(
+                                          height: 200,
+                                          viewportFraction: 1,
+                                          enlargeCenterPage: false,
+                                        ),
+                                      ),
+                                    ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                event['title'],
+                                                style: const TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                            ),
+                                            PopupMenuButton<String>(
+                                              color: AppColors.backgroundColor,
+                                              icon: Icon(Icons.more_vert),
+                                              onSelected: (value) {
+                                                if (value == 'edit') {
+                                                  // 수정 기능 구현 예정
+                                                } else if (value == 'delete') {
+                                                  _deleteEvent(event['id']);
+                                                } else if (value == 'report') {
+                                                  // 신고 기능 구현 예정
+                                                }
+                                              },
+                                              itemBuilder:
+                                                  (BuildContext context) {
+                                                if (event['user_id'] ==
+                                                    currentUserId) {
+                                                  return [
+                                                    PopupMenuItem<String>(
+                                                      value: 'edit',
+                                                      child: Text('수정'),
+                                                    ),
+                                                    PopupMenuItem<String>(
+                                                      value: 'delete',
+                                                      child: Text('삭제'),
+                                                    ),
+                                                  ];
+                                                } else {
+                                                  return [
+                                                    PopupMenuItem<String>(
+                                                      value: 'report',
+                                                      child: Text('신고'),
+                                                    ),
+                                                  ];
+                                                }
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          event['content'],
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[600]),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          "${DateFormat('yyyy.MM.dd').format(event['date'])} ${event['start_time'] ?? ''} - ${event['end_time'] ?? ''}",
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[500]),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
                         },
-                        title: Text(event['title']),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(event['content']),
-                            if (userProfile != null &&
-                                userProfile['profile_image'] != null)
-                              CircleAvatar(
-                                backgroundImage:
-                                    NetworkImage(userProfile['profile_image']),
-                                radius: 20,
-                              ),
-                            if (userProfile != null)
-                              Text(userProfile['nickname']),
-                            if (event['image_urls'] != null)
-                              CarouselSlider(
-                                options: CarouselOptions(
-                                  height: 300.0, // 이미지 높이 조정
-                                  enableInfiniteScroll: false,
-                                  enlargeCenterPage: true,
-                                ),
-                                items:
-                                    event['image_urls'].map<Widget>((imageUrl) {
-                                  return Builder(
-                                    builder: (BuildContext context) {
-                                      return Container(
-                                        width:
-                                            MediaQuery.of(context).size.width,
-                                        margin: const EdgeInsets.symmetric(
-                                            horizontal: 5.0),
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(10.0),
-                                          boxShadow: const [
-                                            BoxShadow(
-                                              color: Colors.black26,
-                                              spreadRadius: 1,
-                                              blurRadius: 5,
-                                            ),
-                                          ],
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(10.0),
-                                          child: Image.network(imageUrl,
-                                              fit: BoxFit.cover),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }).toList(),
-                              ),
-                            Text(
-                              "${event['date'].year}-${event['date'].month.toString().padLeft(2, '0')}-${event['date'].day.toString().padLeft(2, '0')}",
-                            ),
-                            if (event['start_time'] != null &&
-                                event['end_time'] != null) ...[
-                              Text("시작: ${event['start_time']}"),
-                              Text("종료: ${event['end_time']}"),
-                            ] else if (event['start_time'] == null &&
-                                event['end_time'] == null) ...[
-                              Text("하루 종일"),
-                            ],
-                          ],
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (value) {
-                            if (value == 'delete') {
-                              _deleteEvent(event['id']);
-                            } else if (value == 'edit') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => EditEventScreen(
-                                    event: event,
-                                    onEditEvent: _editEvent,
-                                  ),
-                                ),
-                              );
-                            } else if (value == 'report') {
-                              // 신고 기능 추가
-                              print('Report event: ${event['id']}');
-                            }
-                          },
-                          itemBuilder: (BuildContext context) {
-                            return <PopupMenuEntry<String>>[
-                              if (event['user_id'] == currentUser!.uid) ...[
-                                const PopupMenuItem<String>(
-                                  value: 'edit',
-                                  child: Text('수정'),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'delete',
-                                  child: Text('삭제'),
-                                ),
-                              ] else
-                                const PopupMenuItem<String>(
-                                  value: 'report',
-                                  child: Text('신고'),
-                                ),
-                            ];
-                          },
-                        ),
                       ),
-                    );
-                  },
-                ),
+          ),
+        ],
+      ),
     );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 }
