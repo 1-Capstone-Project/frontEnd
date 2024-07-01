@@ -24,13 +24,11 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1000),
     );
 
     _fadeAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
-
-    _animationController.forward();
+        Tween<double>(begin: 1.0, end: 0.0).animate(_animationController);
 
     _checkLoginStatus();
   }
@@ -38,11 +36,16 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _checkLoginStatus() async {
     User? user = FirebaseAuth.instance.currentUser;
 
-    Future.delayed(const Duration(seconds: 3), () {
-      if (user != null) {
-        _navigateTo(const MainNavigator());
-      } else {
-        _navigateTo(const SignInScreen());
+    await Future.delayed(const Duration(seconds: 2));
+    _animationController.forward();
+
+    _animationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (user != null) {
+          _navigateTo(const MainNavigator());
+        } else {
+          _navigateTo(const SignInScreen());
+        }
       }
     });
   }

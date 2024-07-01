@@ -47,21 +47,27 @@ class _CalendarScreenState extends State<CalendarScreen> {
         };
       }).toList();
 
-      setState(() {
-        _events = events;
-        _filteredEvents = events;
-        _events.sort((a, b) => b['date'].compareTo(a['date']));
-        _isLoading = false;
-      });
+      if (mounted) {
+        // 여기에 mounted 체크를 추가합니다.
+        setState(() {
+          _events = events;
+          _filteredEvents = events;
+          _events.sort((a, b) => b['date'].compareTo(a['date']));
+          _isLoading = false;
+        });
 
-      for (var event in events) {
-        _fetchUserProfile(event['user_id']);
+        for (var event in events) {
+          _fetchUserProfile(event['user_id']);
+        }
       }
     } catch (e) {
       print('Exception: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        // 여기에도 mounted 체크를 추가합니다.
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -91,9 +97,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
               'profile_image': null,
             };
 
-      setState(() {
-        _userProfiles[userId] = userProfile;
-      });
+      if (mounted) {
+        // 여기에 mounted 체크를 추가합니다.
+        setState(() {
+          _userProfiles[userId] = userProfile;
+        });
+      }
     }
   }
 
@@ -309,18 +318,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                                 if (event['user_id'] ==
                                                     currentUserId) {
                                                   return [
-                                                    PopupMenuItem<String>(
+                                                    const PopupMenuItem<String>(
                                                       value: 'edit',
                                                       child: Text('수정'),
                                                     ),
-                                                    PopupMenuItem<String>(
+                                                    const PopupMenuItem<String>(
                                                       value: 'delete',
                                                       child: Text('삭제'),
                                                     ),
                                                   ];
                                                 } else {
                                                   return [
-                                                    PopupMenuItem<String>(
+                                                    const PopupMenuItem<String>(
                                                       value: 'report',
                                                       child: Text('신고'),
                                                     ),
