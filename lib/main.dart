@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:gitmate/const/colors.dart';
+import 'package:gitmate/screens/home/home_screen.dart';
 import 'package:gitmate/screens/splash_screen.dart';
 import 'firebase_options.dart';
 
@@ -53,7 +54,7 @@ class MyApp extends StatelessWidget {
                   : AppColors.backgroundColor),
         ),
       ),
-      home: const SplashScreen(),
+      home: const HomeScreen(),
     );
   }
 }

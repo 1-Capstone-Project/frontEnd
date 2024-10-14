@@ -21,7 +21,6 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),

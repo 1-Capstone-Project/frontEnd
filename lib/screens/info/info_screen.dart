@@ -36,7 +36,7 @@ class _InfoScreenState extends State<InfoScreen> {
 
     try {
       final response = await http.get(Uri.parse(
-          'http://gitmate-backend.com:8080/company_info?page=$_currentPage&limit=20'));
+          'http://localhost:8080/company_info?page=$_currentPage&limit=20'));
 
       if (response.statusCode == 200) {
         final List<dynamic> fetchedData = json.decode(response.body);
